@@ -159,7 +159,7 @@ HAIR_STYLES = {
 
 def person(x, y, s=1.0, suit=SUIT, skin=SKIN[0], tie=RED, shades=False, earpiece=False,
            hair="#2a1d14", arm_up=False, wave_arm=True, motion="bob", who=None, hair_style="side",
-           shirt=WHITE, hat=None, gesture=False, pants=None):
+           shirt=WHITE, hat=None, gesture=False, pants=None, face=True, carry=False):
     """Standing cartoon figure, feet at (x, y), ~480*s tall.
 
     Idle motion, breathing, blinks and head tilt are always on. `who` names the
@@ -189,8 +189,16 @@ def person(x, y, s=1.0, suit=SUIT, skin=SKIN[0], tie=RED, shades=False, earpiece
         upper.append(f'<path d="M-7,-336 L7,-336 L10,-322 L0,-316 L-10,-322Z" fill="{_shade(tie, .8)}"/>'
                      f'<path d="M-6,-318 L6,-318 L12,-246 L0,-232 L-12,-246Z" fill="{tie}"/>')
     upper.append(f'<circle cx="0" cy="-214" r="4" fill="{dark}"/><circle cx="0" cy="-194" r="4" fill="{dark}"/>')
-    # Front arm (right): waving, gesturing or relaxed.
-    if arm_up:
+    # Front arm (right): waving, gesturing, carrying or relaxed.
+    if carry:
+        upper.append(f'<path d="M62,-326 Q86,-290 54,-262" stroke="{suit}" stroke-width="30" fill="none" stroke-linecap="round"/>'
+                     '<path d="M-62,-326 Q-86,-290 -54,-262" stroke="' + dark + '" stroke-width="30" fill="none" stroke-linecap="round"/>'
+                     '<rect x="-74" y="-322" width="148" height="112" rx="6" fill="#c99b5f"/>'
+                     '<rect x="-74" y="-322" width="148" height="18" fill="#b5884f"/>'
+                     '<rect x="-12" y="-322" width="24" height="112" fill="#e1c07f"/>'
+                     '<rect x="20" y="-280" width="40" height="26" rx="3" fill="#fff" opacity=".85"/>'
+                     f'<circle cx="-54" cy="-262" r="15" fill="{skin}"/><circle cx="54" cy="-262" r="15" fill="{skin}"/>')
+    elif arm_up:
         arm = (f'<path d="M58,-324 Q100,-380 114,-452" stroke="{suit}" stroke-width="30" fill="none" stroke-linecap="round"/>'
                f'<rect x="102" y="-462" width="26" height="10" rx="4" fill="{shirt}" transform="rotate(-20 115 -457)"/>'
                f'<ellipse cx="118" cy="-474" rx="16" ry="19" fill="{skin}"/>')
@@ -213,7 +221,9 @@ def person(x, y, s=1.0, suit=SUIT, skin=SKIN[0], tie=RED, shades=False, earpiece
         head.append(f'<path d="M-46,-410 Q-40,-466 0,-462 Q40,-466 46,-410 Q30,-438 0,-440 Q-30,-438 -46,-410Z" fill="{hair}"/>')
     head.append(f'<path d="M-28,-428 Q-18,-434 -8,-428" stroke="{_shade(hair, .8)}" stroke-width="5" fill="none" stroke-linecap="round"/>'
                 f'<path d="M8,-428 Q18,-434 28,-428" stroke="{_shade(hair, .8)}" stroke-width="5" fill="none" stroke-linecap="round"/>')
-    if shades:
+    if not face:
+        pass
+    elif shades:
         head.append('<path d="M-36,-414 L-4,-414 L-6,-396 Q-20,-390 -34,-398Z M4,-414 L36,-414 L34,-398 Q20,-390 6,-396Z" fill="#0a0a0a"/>'
                     '<rect x="-6" y="-412" width="12" height="4" fill="#0a0a0a"/>'
                     '<path d="M-30,-410 L-22,-410" stroke="#fff" stroke-width="3" opacity=".5"/>')
@@ -221,9 +231,11 @@ def person(x, y, s=1.0, suit=SUIT, skin=SKIN[0], tie=RED, shades=False, earpiece
         eyes = ('<ellipse cx="-18" cy="-406" rx="6" ry="7.5" fill="#1d1d24"/><ellipse cx="18" cy="-406" rx="6" ry="7.5" fill="#1d1d24"/>'
                 '<circle cx="-16" cy="-409" r="2.2" fill="#fff"/><circle cx="20" cy="-409" r="2.2" fill="#fff"/>')
         head.append(g("blink", eyes, f"animation-delay:-{_rng.uniform(0, 4):.1f}s;animation-duration:{_rng.uniform(3.5, 5.5):.1f}s"))
-    head.append(f'<path d="M-3,-398 Q4,-386 -4,-382" stroke="{skin_d}" stroke-width="4" fill="none" stroke-linecap="round"/>'
+    if face:
+        head.append(f'<path d="M-3,-398 Q4,-386 -4,-382" stroke="{skin_d}" stroke-width="4" fill="none" stroke-linecap="round"/>'
                 '<circle cx="-30" cy="-384" r="9" fill="#e86a6a" opacity=".18"/><circle cx="30" cy="-384" r="9" fill="#e86a6a" opacity=".18"/>')
-    head.append('<path d="M-13,-372 Q0,-362 13,-372" stroke="#7a3b2e" stroke-width="4" fill="none" stroke-linecap="round" class="mouthclosed"/>'
+    if face:
+        head.append('<path d="M-13,-372 Q0,-362 13,-372" stroke="#7a3b2e" stroke-width="4" fill="none" stroke-linecap="round" class="mouthclosed"/>'
                 '<g class="mouthopen" style="opacity:0"><ellipse cx="0" cy="-369" rx="12" ry="9" fill="#5a1f1f"/>'
                 '<ellipse cx="0" cy="-364" rx="7" ry="4" fill="#d9666b"/><rect x="-8" y="-377" width="16" height="4" rx="2" fill="#fff"/></g>')
     if earpiece:
@@ -241,46 +253,124 @@ def person(x, y, s=1.0, suit=SUIT, skin=SKIN[0], tie=RED, shades=False, earpiece
     return g(motion, body, desync(1.6, 2.6)) if motion else body
 
 
-def crowd(y, n=40, seed=3, color="#0a1222", scale=1.0, cheer=False):
+SHIRTS = ["#c0392b", "#2d58b8", "#f4f1ea", "#e0b95e", "#3d8a43", "#7a5fbf", "#e86a3a", "#22356b", "#d23a52"]
+HAIRS = ["#1a1a1a", "#3a2414", "#6b4423", "#c9a14a", "#8a3b1e", "#9a9a9a"]
+
+
+def mini(x, base, s=1.0, shirt="#2d58b8", skin=SKIN[0], hair="#1a1a1a", pose=0, prop=None, face=True, dim=1.0):
+    """Small crowd figure (head + torso, ~175*s tall). pose: 0 arms down, 1 one arm up, 2 both up."""
+    sh = _shade(shirt, dim) if dim != 1 else shirt
+    sk = _shade(skin, dim) if dim != 1 else skin
+    hr = _shade(hair, dim) if dim != 1 else hair
+    shd = _shade(sh, .8)
+    p = [f'<g transform="translate({x:.0f},{base:.0f}) scale({s:.3f})">']
+    if pose >= 1:
+        p.append(f'<path d="M28,-96 Q46,-140 50,-178" stroke="{sh}" stroke-width="20" fill="none" stroke-linecap="round"/>'
+                 f'<circle cx="50" cy="-186" r="11" fill="{sk}"/>')
+        if prop == "flag":
+            p.append(f'<rect x="48" y="-250" width="4" height="70" fill="#ccc"/>{flag(52, -250, 54, 32, pole=False)}')
+    if pose >= 2:
+        p.append(f'<path d="M-28,-96 Q-46,-140 -50,-178" stroke="{shd}" stroke-width="20" fill="none" stroke-linecap="round"/>'
+                 f'<circle cx="-50" cy="-186" r="11" fill="{sk}"/>')
+        if prop == "sign":
+            p.append('<rect x="-74" y="-262" width="148" height="70" rx="6" fill="#fff" stroke="#14161b" stroke-width="4"/>'
+                     f'<rect x="-60" y="-246" width="120" height="12" rx="4" fill="{RED}"/><rect x="-60" y="-226" width="80" height="12" rx="4" fill="#2d58b8"/>')
+    p.append(f'<path d="M-44,10 L-44,-70 Q-44,-112 0,-114 Q44,-112 44,-70 L44,10Z" fill="{sh}"/>'
+             f'<path d="M10,-113 Q44,-110 44,-70 L44,10 L10,10Z" fill="#000" opacity=".12"/>'
+             f'<path d="M-12,-112 L0,-96 L12,-112Z" fill="{_shade(sk, .9)}"/>'
+             f'<circle cx="0" cy="-142" r="30" fill="{sk}"/>'
+             f'<path d="M-31,-146 Q-32,-178 0,-177 Q32,-178 31,-146 Q24,-164 0,-165 Q-24,-164 -31,-146Z" fill="{hr}"/>')
+    if face:
+        p.append('<circle cx="-10" cy="-142" r="3.4" fill="#1d1d24"/><circle cx="10" cy="-142" r="3.4" fill="#1d1d24"/>'
+                 '<path d="M-8,-128 Q0,-122 8,-128" stroke="#7a3b2e" stroke-width="3" fill="none" stroke-linecap="round"/>')
+    p.append('</g>')
+    return "".join(p)
+
+
+def crowd_rows(front_y, rows=3, per_row=22, seed=3, scale=1.0, cheer=False, dim=1.0, props=.25,
+               x0=-40, x1=W + 40, shirts=None, anim=True):
+    """Rows of small people, back rows smaller and darker."""
     r = random.Random(seed)
     out = []
-    for i in range(n):
-        x = i * W / n + r.uniform(-15, 15)
-        s = scale * r.uniform(.8, 1.15)
-        body = (f'<circle cx="{x:.0f}" cy="{y - 95 * s:.0f}" r="{24 * s:.0f}" fill="{color}"/>'
-                f'<path d="M{x - 45 * s:.0f},{y + 20} Q{x - 45 * s:.0f},{y - 65 * s:.0f} {x:.0f},{y - 68 * s:.0f} '
-                f'Q{x + 45 * s:.0f},{y - 65 * s:.0f} {x + 45 * s:.0f},{y + 20}Z" fill="{color}"/>')
-        if cheer and r.random() < .5:
-            body += (f'<path d="M{x + 20 * s:.0f},{y - 50 * s:.0f} L{x + 50 * s:.0f},{y - 150 * s:.0f}" stroke="{color}" '
-                     f'stroke-width="{16 * s:.0f}" stroke-linecap="round"/>')
-        out.append(g("jump" if cheer else "bob", body, desync(.45, .8) if cheer else desync(1.5, 3)))
+    for row in range(rows):
+        depth = rows - 1 - row          # 0 = front row
+        s_ = scale * (1 - depth * .14)
+        y = front_y - depth * 70 * scale
+        rdim = dim * (1 - depth * .12)
+        n = int(per_row * (1 + depth * .15))
+        for i in range(n):
+            x = x0 + (i + .5 + (row % 2) * .5) * (x1 - x0) / n + r.uniform(-12, 12)
+            pose = 0
+            prop = None
+            if cheer:
+                q = r.random()
+                pose = 2 if q < props * .5 else (1 if q < .55 else 0)
+                prop = "sign" if pose == 2 else ("flag" if pose == 1 and r.random() < props else None)
+            fig = mini(x, y + r.uniform(-6, 6), s_ * r.uniform(.92, 1.08), r.choice(shirts or SHIRTS), r.choice(SKIN),
+                       r.choice(HAIRS), pose, prop, face=depth == 0, dim=rdim)
+            if anim:
+                fig = g("jump" if cheer and r.random() < .6 else "bob", fig, desync(.45, .8) if cheer else desync(1.6, 3))
+            out.append(fig)
     return "".join(out)
 
 
+def crowd(y, n=40, seed=3, color="#0a1222", scale=1.0, cheer=False):
+    """Backwards-compatible crowd: rows of small people (dimmed for dark scenes)."""
+    dark = sum(int(color.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)) < 120
+    return crowd_rows(y + 30, rows=2, per_row=max(10, int(n * .7)), seed=seed, scale=scale * .8, cheer=cheer,
+                      dim=.55 if dark else 1.0)
+
+
 def white_house(cx, base, s=1.0, lit=True, fill=CREAM):
-    """Front of the White House: portico with columns, two wings, windows."""
-    out = [f'<g transform="translate({cx},{base}) scale({s})">']
-    win = "#ffd98a" if lit else "#3b4c6b"
-    out.append(f'<rect x="-560" y="-300" width="1120" height="300" fill="{fill}"/>')
-    out.append('<rect x="-580" y="-318" width="1160" height="22" fill="#e4d7bb"/>')
-    for i in range(-560, 561, 28):
-        out.append(f'<rect x="{i}" y="-334" width="16" height="18" fill="#e4d7bb"/>')
-    r = random.Random(int(cx))
-    for yy in (-250, -130):
-        for x in list(range(-520, -170, 88)) + list(range(200, 540, 88)):
-            w_ = f'<rect x="{x}" y="{yy}" width="44" height="72" fill="{win}"/>'
+    """White House north facade: balustraded roof, pedimented windows, columned portico."""
+    win = "#ffd98a" if lit else "#3b5578"
+    wall, wall_d, trim = fill, _shade(fill, .9), _shade(fill, 1.25)
+    out = [f'<g transform="translate({cx},{base}) scale({s})">',
+           '<ellipse cx="0" cy="12" rx="680" ry="26" fill="#000" opacity=".18"/>',
+           f'<rect x="-600" y="-300" width="1200" height="300" fill="{wall}"/>',
+           f'<rect x="-600" y="-300" width="140" height="300" fill="{wall_d}"/><rect x="460" y="-300" width="140" height="300" fill="{wall_d}"/>',
+           f'<rect x="-600" y="-150" width="1200" height="8" fill="{trim}"/>',
+           f'<rect x="-612" y="-318" width="1224" height="20" fill="{trim}"/>']
+    for i in range(-600, 600, 16):
+        out.append(f'<rect x="{i + 3}" y="-298" width="9" height="7" fill="{wall_d}"/>')
+    # Balustrade along the roof.
+    out.append(f'<rect x="-604" y="-356" width="1208" height="9" fill="{trim}"/><rect x="-604" y="-326" width="1208" height="8" fill="{trim}"/>')
+    for i in range(-596, 600, 13):
+        out.append(f'<path d="M{i},-347 q4,6 0,10 q-3,6 3,11 h4 q6,-5 3,-11 q-4,-4 0,-10Z" fill="{trim}"/>')
+    for i in range(-600, 601, 150):
+        out.append(f'<rect x="{i - 9}" y="-362" width="18" height="44" fill="{trim}"/>')
+    r = random.Random(int(cx) + 7)
+    for row, yy in enumerate((-276, -128)):
+        for x in list(range(-560, -230, 86)) + list(range(250, 580, 86)):
+            pane = f'<rect x="{x + 6}" y="{yy + 6}" width="34" height="74" fill="{win}"/>'
             if lit and r.random() < .35:
-                w_ = g("winflicker", w_, desync(3, 7))
-            out.append(w_ + f'<path d="M{x - 6},{yy - 4} L{x + 22},{yy - 22} L{x + 50},{yy - 4}Z" fill="#ddd0b3"/>')
-    out.append('<path d="M-230,-380 L0,-470 L230,-380Z" fill="#efe4cb"/>')
-    out.append('<path d="M-200,-388 L0,-450 L200,-388Z" fill="#e2d4b5"/>')
-    out.append('<rect x="-240" y="-382" width="480" height="30" fill="#e8dcc2"/>')
-    for x in range(-210, 211, 70):
-        out.append(f'<rect x="{x - 14}" y="-352" width="28" height="352" fill="#fbf6ea"/>'
-                   f'<rect x="{x - 18}" y="-356" width="36" height="10" fill="#e4d7bb"/>')
-    out.append(f'<rect x="-36" y="-150" width="72" height="150" fill="#8a6a3d"/>'
-               f'<rect x="-30" y="-144" width="60" height="140" fill="{win}" opacity=".85"/>')
-    out.append('<rect x="-600" y="0" width="1200" height="20" fill="#d9ccb0"/>')
+                pane = g("winflicker", pane, desync(3, 7))
+            out.append(f'<rect x="{x}" y="{yy}" width="46" height="86" fill="{trim}"/>' + pane +
+                       f'<path d="M{x + 23},{yy + 6} V{yy + 80} M{x + 6},{yy + 40} H{x + 40}" stroke="{trim}" stroke-width="3"/>'
+                       f'<rect x="{x - 4}" y="{yy + 86}" width="54" height="6" fill="{trim}"/>')
+            if row == 0:
+                out.append(f'<path d="M{x - 6},{yy - 2} L{x + 23},{yy - 22} L{x + 52},{yy - 2}Z" fill="{trim}"/>')
+            else:
+                out.append(f'<path d="M{x - 6},{yy - 2} Q{x + 23},{yy - 24} {x + 52},{yy - 2}Z" fill="{trim}"/>')
+    # Portico: recessed wall, door with fanlight, lantern, columns, entablature, pediment.
+    out.append(f'<rect x="-210" y="-330" width="420" height="330" fill="{_shade(fill, .82)}"/>')
+    out.append(f'<path d="M-46,0 L-46,-150 Q0,-196 46,-150 L46,0Z" fill="{trim}"/>'
+               f'<path d="M-36,0 L-36,-146 Q0,-182 36,-146 L36,0Z" fill="{"#ffe7b0" if lit else "#6a4a2a"}"/>'
+               f'<path d="M-36,-146 Q0,-182 36,-146" stroke="{trim}" stroke-width="4" fill="none"/><rect x="-2" y="-146" width="4" height="146" fill="{trim}"/>')
+    out.append(f'<line x1="0" y1="-330" x2="0" y2="-250" stroke="#333" stroke-width="3"/>'
+               f'<rect x="-14" y="-252" width="28" height="36" rx="5" fill="{"#ffd98a" if lit else "#e8e0c8"}" stroke="#333" stroke-width="3"/>')
+    for x in range(-180, 181, 72):
+        out.append(f'<rect x="{x - 15}" y="-324" width="30" height="312" fill="#fbf6ea"/>'
+                   f'<rect x="{x + 5}" y="-324" width="10" height="312" fill="#000" opacity=".07"/>'
+                   f'<rect x="{x - 21}" y="-14" width="42" height="14" fill="{trim}"/>'
+                   f'<rect x="{x - 20}" y="-334" width="40" height="10" fill="{trim}"/>'
+                   f'<circle cx="{x - 16}" cy="-326" r="6" fill="{trim}"/><circle cx="{x + 16}" cy="-326" r="6" fill="{trim}"/>')
+    out.append(f'<rect x="-232" y="-366" width="464" height="34" fill="{trim}"/><rect x="-232" y="-340" width="464" height="6" fill="{wall_d}"/>'
+               f'<path d="M-246,-366 L0,-450 L246,-366Z" fill="{trim}"/><path d="M-206,-372 L0,-436 L206,-372Z" fill="{wall_d}"/>'
+               f'<circle cx="0" cy="-398" r="16" fill="{trim}"/><circle cx="0" cy="-398" r="10" fill="{wall_d}"/>')
+    # Steps.
+    for k in range(3):
+        out.append(f'<rect x="{-250 - k * 24}" y="{k * 8}" width="{500 + k * 48}" height="8" fill="{_shade(trim, .96 - k * .03)}"/>')
     out.append(flag(-6, -560, 120, 70, wave=6))
     out.append('</g>')
     return "".join(out)
@@ -618,22 +708,45 @@ def a_white_house_night():
     return svg("".join(b), d + d2)
 
 
+def box3d(x, y, w, h, d=22):
+    """Cardboard box with a visible top and side face; (x, y) = bottom-left of the front."""
+    return (f'<path d="M{x},{y - h} L{x + d},{y - h - d * .6} L{x + w + d},{y - h - d * .6} L{x + w},{y - h}Z" fill="#dcb47a"/>'
+            f'<path d="M{x + w},{y} L{x + w + d},{y - d * .6} L{x + w + d},{y - h - d * .6} L{x + w},{y - h}Z" fill="#a87a45"/>'
+            f'<rect x="{x}" y="{y - h}" width="{w}" height="{h}" fill="#c99b5f"/>'
+            f'<rect x="{x + w / 2 - 8}" y="{y - h}" width="16" height="{h}" fill="#e7cb93"/>'
+            f'<rect x="{x + 10}" y="{y - h + 14}" width="{w * .32}" height="{h * .22}" rx="2" fill="#fff" opacity=".85"/>')
+
+
 def a_movers():
-    d, s = sky("#9cc8ec", "#eef4f7")
+    d, s_ = sky("#9cc8ec", "#eef4f7")
     d2, l = lawn(820)
-    b = [s, clouds(4, 31, 40, 260), white_house(1300, 820, .9, lit=False), l]
-    truck = (f'<rect x="120" y="560" width="620" height="320" rx="16" fill="{WHITE}"/>'
-             f'<path d="M740,640 L900,640 L960,740 L960,880 L740,880Z" fill="{RED}"/>'
-             '<path d="M770,660 L880,660 L920,740 L770,740Z" fill="#a9d3f0"/>'
-             '<circle cx="260" cy="890" r="56" fill="#222"/><circle cx="820" cy="890" r="56" fill="#222"/>'
-             '<circle cx="260" cy="890" r="22" fill="#999"/><circle cx="820" cy="890" r="22" fill="#999"/>')
-    b.append(g("drivein", truck))
-    for i, (x, y) in enumerate(((1000, 880), (1080, 880), (1040, 800), (1180, 880))):
-        b.append(g("dropin", f'<rect x="{x}" y="{y - 80}" width="76" height="80" fill="#c99b5f" stroke="#8a6232" stroke-width="3"/>'
-                             f'<rect x="{x + 28}" y="{y - 80}" width="20" height="80" fill="#e1c07f"/>', delay(.8 + i * .25)))
-    b.append(person(560, 990, .55, suit="#30507a", skin=SKIN[1], motion="march", who="mover", hair_style="cap", hair="#c0392b", tie=None, gesture=True))
-    b.append(g("hurry", person(1400, 1000, .55, suit="#30507a", skin=SKIN[2], motion="march")
-               + '<rect x="1340" y="640" width="120" height="100" fill="#c99b5f" stroke="#8a6232" stroke-width="3"/>', "--dx:-200px"))
+    b = [s_, clouds(4, 31, 40, 260), white_house(1350, 820, .82, lit=False), l,
+         '<rect x="0" y="880" width="1920" height="200" fill="#9a9690"/><rect x="0" y="876" width="1920" height="8" fill="#c9c4bb"/>']
+    truck = ['<ellipse cx="520" cy="960" rx="470" ry="22" fill="#000" opacity=".22"/>',
+             '<rect x="80" y="560" width="660" height="350" rx="18" fill="#f4f1ea"/>',
+             '<rect x="80" y="560" width="660" height="24" rx="10" fill="#e2ddd2"/>',
+             f'<rect x="80" y="760" width="660" height="34" fill="{RED}"/><rect x="80" y="794" width="660" height="16" fill="#22356b"/>',
+             '<text x="410" y="700" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="96" fill="#22356b">MOVERS</text>',
+             '<path d="M740,650 L890,650 Q930,650 950,690 L990,770 L990,900 L740,900Z" fill="#c0392b"/>',
+             '<path d="M770,672 L880,672 Q905,672 918,700 L950,766 L770,766Z" fill="#a9d3f0"/>',
+             '<path d="M790,680 L820,680 L790,750Z" fill="#fff" opacity=".45"/>',
+             '<rect x="776" y="790" width="40" height="8" rx="4" fill="#7a2018"/>',
+             '<rect x="975" y="830" width="24" height="26" rx="6" fill="#fff6c8"/><rect x="960" y="880" width="46" height="24" rx="6" fill="#555"/>',
+             '<rect x="60" y="890" width="40" height="20" fill="#555"/>']
+    for wx in (230, 640, 880):
+        truck.append(f'<circle cx="{wx}" cy="910" r="56" fill="#1d1d22"/><circle cx="{wx}" cy="910" r="26" fill="#b9bec6"/>'
+                     f'<circle cx="{wx}" cy="910" r="8" fill="#555"/>')
+    truck.append('<path d="M740,900 L740,600" stroke="#c9c4bb" stroke-width="4"/>')
+    b.append(g("drivein", "".join(truck)))
+    # Ramp and neatly stacked boxes on a dolly.
+    b.append('<path d="M740,900 L960,960 L960,970 L740,912Z" fill="#8a8a8a"/>')
+    stack = (box3d(1060, 950, 120, 90) + box3d(1190, 950, 110, 90) + box3d(1100, 860, 130, 84))
+    b.append(g("dropin", stack, delay(.9)))
+    b.append(g("dropin", box3d(1560, 965, 100, 80), delay(1.3)))
+    b.append(person(1010, 1000, .55, suit="#30507a", skin=SKIN[1], motion="march", who="mover", hair_style="cap",
+                    hair="#c0392b", tie=None, gesture=True, shirt="#e8e2d6"))
+    b.append(g("hurry", person(1420, 1000, .55, suit="#30507a", skin=SKIN[2], motion="march", hair_style="cap",
+                               hair="#c0392b", tie=None, carry=True, shirt="#e8e2d6"), "--dx:-220px"))
     return svg("".join(b), d + d2)
 
 
@@ -707,8 +820,9 @@ def a_chef():
     b.append(g("slidein-b", '<ellipse cx="960" cy="760" rx="380" ry="80" fill="#fff"/><ellipse cx="960" cy="755" rx="300" ry="58" fill="#f2eee7"/>'
              '<ellipse cx="960" cy="740" rx="160" ry="40" fill="#8a4a2a"/><ellipse cx="900" cy="735" rx="60" ry="22" fill="#5d9c4a"/>'))
     b.append(steam(920, 690, 3, 1.2))
-    b.append('<path d="M1360,720 L1360,560 M1400,720 L1400,560" stroke="#bbb" stroke-width="10"/>'
-             '<path d="M520,720 L520,540 Q560,560 540,640 L540,720" fill="#ccc"/>')
+    b.append('<rect x="560" y="800" width="16" height="120" rx="6" fill="#c9ced3" transform="rotate(-12 568 860)"/>'
+             '<rect x="1340" y="800" width="16" height="120" rx="6" fill="#c9ced3" transform="rotate(12 1348 860)"/>'
+             '<ellipse cx="1500" cy="800" rx="70" ry="22" fill="#fff"/><rect x="1470" y="730" width="60" height="70" rx="8" fill="#d8eef8" opacity=".85"/>')
     b.insert(1, person(1380, 980, 1.05, suit="#f4f1ea", skin=SKIN[2], tie=None, hair="#1a1a1a", hair_style="short",
                        hat="chef", who="chef", gesture=True, pants="#2b2b33", shirt="#e8e2d6"))
     return svg("".join(b), d)
@@ -751,21 +865,20 @@ def a_paycheck():
 
 
 def a_population():
-    d, s = sky("#1f3d6e", "#0b1a33")
-    b = [s]
+    d, s_ = sky("#1f3d6e", "#0b1a33")
+    b = [s_, '<rect x="0" y="0" width="1920" height="1080" fill="url(#stadlight)"/>']
+    defs = d + radial("stadlight", "#3a5a9a", "#0b1a33", .5, .1, .9)
     r = random.Random(8)
-    for row in range(9):
-        y = 260 + row * 95
-        s_ = .35 + row * .06
-        for i in range(30):
-            x = (i + .5 * (row % 2)) * 68 + r.uniform(-8, 8)
-            col = r.choice(["#e8d6b5", "#c98e63", "#8d5a3b", "#f0c9a4", "#6f4630"])
-            shirt = r.choice([RED, WHITE, "#3f6fd8", GOLD, "#5b8a5a", "#7a5fbf"])
-            body = (f'<circle cx="{x:.0f}" cy="{y - 60 * s_:.0f}" r="{22 * s_:.1f}" fill="{col}"/>'
-                    f'<path d="M{x - 34 * s_:.0f},{y + 40 * s_:.0f} Q{x - 34 * s_:.0f},{y - 30 * s_:.0f} {x:.0f},{y - 32 * s_:.0f} Q{x + 34 * s_:.0f},{y - 30 * s_:.0f} {x + 34 * s_:.0f},{y + 40 * s_:.0f}Z" fill="{shirt}"/>')
-            # Stadium wave: delay follows x.
-            b.append(g("stadium", body, f"animation-delay:{x / W * 1.6 - 3:.2f}s"))
-    return svg("".join(b), d)
+    for row in range(7):
+        y = 330 + row * 115
+        s2 = .5 + row * .09
+        n = int(24 - row * 1.5)
+        for i in range(n):
+            x = (i + .5 + .5 * (row % 2)) * W / n + r.uniform(-10, 10)
+            fig = mini(x, y, s2, r.choice(SHIRTS), r.choice(SKIN), r.choice(HAIRS), pose=1 if r.random() < .2 else 0,
+                       face=row > 2, dim=.65 + row * .05)
+            b.append(g("stadium", fig, f"animation-delay:{x / W * 1.6 - 3:.2f}s"))
+    return svg("".join(b), defs)
 
 
 def a_pdb():
@@ -916,19 +1029,34 @@ def a_little_league():
 
 
 def a_congress():
-    d, s = sky("#2a1820", "#0f0a12")
-    b = [s]
+    defs = grad("chw", "#3a2a2a", "#1c1414") + grad("rug2", "#2e4a7a", "#1a2c4e")
+    b = [f'<rect width="{W}" height="{H}" fill="url(#chw)"/>']
+    for x in range(0, W, 160):
+        b.append(f'<rect x="{x + 20}" y="60" width="110" height="360" rx="55" fill="#4a3434"/>')
+    b.append(flag(700, 120, 220, 140, wave=6, pole=False) + flag(1000, 120, 220, 140, wave=6, pole=False))
+    b.append(f'<circle cx="960" cy="360" r="70" fill="#2a3a6a" stroke="{GOLD}" stroke-width="8"/>{star_shape(960, 360, 40, GOLD)}')
+    b.append('<path d="M0,1080 L0,560 Q960,470 1920,560 L1920,1080Z" fill="url(#rug2)"/>')
+    # Rostrum with the Speaker.
+    b.append(mini(960, 560, .9, "#22356b", SKIN[0], "#9a9a9a"))
+    b.append('<rect x="760" y="540" width="400" height="120" fill="#6d4020"/><rect x="740" y="526" width="440" height="22" fill="#7d4a22"/>'
+             f'<circle cx="960" cy="600" r="34" fill="none" stroke="{GOLD}" stroke-width="5"/>')
+    b.append(g("gavel", '<rect x="1090" y="470" width="70" height="26" rx="8" fill="#5a3418"/><rect x="1118" y="490" width="12" height="60" fill="#5a3418"/>'))
     r = random.Random(2)
-    for row in range(6):
-        r_ = 300 + row * 110
-        for i in range(18):
-            a = math.pi + (i + .5) * math.pi / 18
-            x, y = 960 + r_ * math.cos(a), 1050 + r_ * .55 * math.sin(a)
-            col = RED if (i + row) % 2 else "#3f6fd8"
-            b.append(g("jump" if r.random() < .3 else "bob", f'<circle cx="{x:.0f}" cy="{y:.0f}" r="22" fill="{col}"/>', desync(.5, 1.2)))
-    b.append('<rect x="760" y="820" width="400" height="200" fill="#5a3418"/>')
-    b.append(g("gavel", '<rect x="900" y="740" width="200" height="40" rx="12" fill="#6d4020"/><rect x="990" y="760" width="20" height="120" fill="#6d4020"/>'))
-    return svg("".join(b), d)
+    for row in range(4):
+        y = 720 + row * 110
+        rad = 600 + row * 230
+        for i in range(14 + row * 3):
+            t = (i + .5) / (14 + row * 3)
+            x = 960 + (t - .5) * 2 * rad * .95
+            if abs(x - 960) < 120 and row < 2:
+                continue
+            yy = y + abs(x - 960) / rad * 60
+            side_red = x < 960
+            shirt = r.choice(["#7a1f2b", "#b5283b", "#22356b", "#3a3a44"]) if side_red else r.choice(["#1f3d6e", "#2d58b8", "#22356b", "#3a3a44"])
+            fig = mini(x, yy, .62 + row * .1, shirt, r.choice(SKIN), r.choice(HAIRS), pose=1 if r.random() < .15 else 0)
+            b.append(g("jump" if r.random() < .25 else "bob", fig, desync(.5, 1.4)))
+            b.append(f'<rect x="{x - 52 * (.62 + row * .1):.0f}" y="{yy - 40:.0f}" width="{104 * (.62 + row * .1):.0f}" height="50" rx="6" fill="#5a3418"/>')
+    return svg("".join(b), defs)
 
 
 def a_secret_service():
@@ -997,7 +1125,7 @@ def a_aide():
     b = [s, '<rect x="0" y="860" width="1920" height="220" fill="#2a3242"/>']
     aide = (person(700, 980, 1.25, suit="#1b2b4a", skin=SKIN[1], tie="#1b2b4a", hair="#111", motion="", who="aide", hair_style="short", gesture=True)
             + g("swing", '<rect x="760" y="760" width="220" height="160" rx="16" fill="#111"/><path d="M820,760 Q870,720 920,760" stroke="#111" stroke-width="16" fill="none"/>')
-            + f'<rect x="590" y="660" width="220" height="16" fill="{GOLD}"/>')
+)
     b.append(g("follow", aide))
     b.append(g("follow", person(1300, 980, 1.25, skin=SKIN[0], motion=""), "animation-delay:-.3s"))
     return svg("".join(b), d)
@@ -1055,7 +1183,9 @@ def a_veto():
 
 def a_situation_room():
     d = grad("sr", "#0e1420", "#05070b")
-    b = [f'<rect width="{W}" height="{H}" fill="url(#sr)"/>']
+    b = [f'<rect width="{W}" height="{H}" fill="url(#sr)"/>', '<rect x="0" y="0" width="1920" height="420" fill="#121a28"/>']
+    for x in range(0, W, 120):
+        b.append(f'<rect x="{x}" y="0" width="4" height="420" fill="#0a0f18"/>')
     for i, x in enumerate((180, 760, 1340)):
         b.append(g("screenflicker", f'<rect x="{x}" y="90" width="420" height="250" rx="8" fill="#0b2a44" stroke="#2a5a80" stroke-width="6"/>', desync(2, 4)))
     b.append('<path class="draw loopdraw" d="M240,300 Q320,180 420,260 Q500,320 560,200" stroke="#4ab0d8" stroke-width="6" fill="none"/>'
@@ -1064,31 +1194,27 @@ def a_situation_room():
     b.append(g("blip", f'<circle cx="1010" cy="190" r="10" fill="{RED}"/>'))
     for k, w in enumerate((320, 240, 280)):
         b.append(g("grow-x loopgrow", f'<rect x="1390" y="{140 + k * 50}" width="{w}" height="20" fill="#4ab0d8"/>', f"animation-delay:-{k * .7:.1f}s"))
-    b.append('<ellipse cx="960" cy="800" rx="760" ry="170" fill="#3a2414"/><ellipse cx="960" cy="790" rx="740" ry="160" fill="#4a2e1a"/>')
     r = random.Random(14)
+    suits = [SUIT, "#2a3346", "#3a3a44", "#4e5a34"]
     for i in range(10):
         a = math.pi * (i + .5) / 10
-        x, y = 960 - 800 * math.cos(a), 760 - 190 * math.sin(a) + 40
-        b.append(g("bob", f'<circle cx="{x:.0f}" cy="{y - 110:.0f}" r="34" fill="{r.choice(SKIN)}"/>'
-                          f'<path d="M{x - 60:.0f},{y + 10:.0f} Q{x - 60:.0f},{y - 70:.0f} {x:.0f},{y - 72:.0f} Q{x + 60:.0f},{y - 70:.0f} {x + 60:.0f},{y + 10:.0f}Z" fill="{SUIT}"/>', desync(2, 3.5)))
+        x, y = 960 - 780 * math.cos(a), 800 - 170 * math.sin(a)
+        b.append(g("bob", mini(x, y + 30, .95, r.choice(suits), r.choice(SKIN), r.choice(HAIRS)), desync(2, 3.5)))
+    b.append('<ellipse cx="960" cy="830" rx="760" ry="170" fill="#3a2414"/><ellipse cx="960" cy="818" rx="740" ry="158" fill="#4a2e1a"/>')
     for i in range(6):
-        b.append(f'<rect x="{560 + i * 140}" y="760" width="70" height="48" rx="4" fill="#f6f0e2"/><ellipse cx="{620 + i * 140}" cy="800" rx="18" ry="8" fill="#ddd"/>')
-    b.append(steam(600, 790, 2, .6) + steam(1160, 790, 2, .6))
+        b.append(f'<rect x="{560 + i * 140}" y="780" width="70" height="48" rx="4" fill="#f6f0e2"/><ellipse cx="{620 + i * 140}" cy="820" rx="18" ry="8" fill="#ddd"/>')
+    b.append(steam(600, 810, 2, .6) + steam(1160, 810, 2, .6))
     return svg("".join(b), d)
 
 
 def a_divided():
-    d = grad("div", RED, "#2d58b8", 1, 0)
-    b = [f'<rect width="{W}" height="{H}" fill="url(#div)"/>']
-    r = random.Random(21)
-    for side, col in ((0, "#6b1420"), (1, "#14306b")):
-        for i in range(60):
-            x = r.uniform(80 + side * 1000, 840 + side * 1000)
-            y = r.uniform(300, 1000)
-            s_ = r.uniform(.6, 1.0)
-            b.append(g("jump", f'<circle cx="{x:.0f}" cy="{y - 60 * s_:.0f}" r="{22 * s_:.0f}" fill="{col}"/>'
-                               f'<path d="M{x - 34 * s_:.0f},{y + 30 * s_:.0f} Q{x - 34 * s_:.0f},{y - 30 * s_:.0f} {x:.0f},{y - 32 * s_:.0f} Q{x + 34 * s_:.0f},{y - 30 * s_:.0f} {x + 34 * s_:.0f},{y + 30 * s_:.0f}Z" fill="{col}"/>', desync(.5, 1)))
-    b.append(g("pulse", '<rect x="950" y="0" width="20" height="1080" fill="#fff" opacity=".7"/>'))
+    d = grad("div", "#c0394a", "#2d58b8", 1, 0)
+    b = [f'<rect width="{W}" height="{H}" fill="url(#div)"/>', '<rect x="0" y="0" width="1920" height="1080" fill="#000" opacity=".15"/>']
+    b.append(crowd_rows(1060, rows=4, per_row=9, seed=21, scale=1.15, cheer=True, props=.6, x0=-20, x1=930,
+                        shirts=["#b5283b", "#e86a3a", "#7a1f2b", "#f4f1ea"]))
+    b.append(crowd_rows(1060, rows=4, per_row=9, seed=22, scale=1.15, cheer=True, props=.6, x0=990, x1=1940,
+                        shirts=["#2d58b8", "#22356b", "#4ab0d8", "#f4f1ea"]))
+    b.append(g("pulse", '<rect x="950" y="0" width="20" height="1080" fill="#fff" opacity=".8"/>'))
     return svg("".join(b), d)
 
 
@@ -1158,18 +1284,21 @@ def a_baseball():
 
 
 def a_easter():
-    d, s = sky("#a8d8f0", "#f5f0d8")
+    d, s_ = sky("#a8d8f0", "#f5f0d8")
     d2, l = lawn(700, "#7cc06a", "#4a8a3a")
-    b = [s, clouds(4, 91, 30, 200), white_house(960, 700, .55, lit=False), l]
+    b = [s_, clouds(4, 91, 30, 200), white_house(960, 700, .55, lit=False), l]
+    b.append(leafy_tree(160, 760, .7, seed=11) + leafy_tree(1760, 760, .7, seed=12))
     r = random.Random(30)
-    for i in range(40):
-        x, y = r.uniform(60, 1860), r.uniform(760, 1060)
-        b.append(g("wobble", f'<ellipse cx="{x:.0f}" cy="{y:.0f}" rx="22" ry="30" fill="{r.choice(["#f39ab0", "#9ad0f3", "#f3e19a", "#b39af3", "#9af3b8"])}"/>', desync(.8, 1.6)))
-    for i in range(6):
-        x = 240 + i * 290
-        kid = (f'<g transform="translate({x},1000) scale(.45)"><circle cx="0" cy="-200" r="50" fill="{SKIN[i % 4]}"/>'
-               f'<path d="M-60,0 Q-60,-150 0,-150 Q60,-150 60,0Z" fill="{["#f39ab0", "#9ad0f3", "#f3e19a"][i % 3]}"/>'
-               '<path d="M60,-90 L140,-60" stroke="#8a6232" stroke-width="10"/><ellipse cx="150" cy="-50" rx="40" ry="18" fill="#c9a14a"/></g>')
+    for i in range(36):
+        x, y = r.uniform(60, 1860), r.uniform(780, 1060)
+        col = r.choice(["#f39ab0", "#9ad0f3", "#f3e19a", "#b39af3", "#9af3b8"])
+        b.append(g("wobble", f'<ellipse cx="{x:.0f}" cy="{y:.0f}" rx="20" ry="27" fill="{col}"/>'
+                             f'<path d="M{x - 19:.0f},{y:.0f} q10,-8 19,0 q10,8 19,0" stroke="#fff" stroke-width="4" fill="none"/>', desync(.8, 1.6)))
+    for i in range(7):
+        x = 200 + i * 255 + r.uniform(-30, 30)
+        kid = (mini(x, 1010, .62, r.choice(["#f39ab0", "#9ad0f3", "#f3e19a", "#9af3b8", "#e86a3a"]), r.choice(SKIN), r.choice(HAIRS))
+               + f'<path d="M{x + 30:.0f},{955:.0f} q22,-30 44,0" stroke="#8a6232" stroke-width="5" fill="none"/>'
+               f'<path d="M{x + 26:.0f},{955:.0f} L{x + 78:.0f},{955:.0f} L{x + 70:.0f},{985:.0f} L{x + 34:.0f},{985:.0f}Z" fill="#c9a14a"/>')
         b.append(g("hop", kid, desync(.5, .8)))
     return svg("".join(b), d + d2)
 
@@ -1207,24 +1336,44 @@ def a_christmas_tree():
 
 
 def a_air_force_one():
-    d, s = sky("#5f9fe0", "#dfeefa")
-    b = [s, clouds(5, 101, 80, 500, .7, speed=2.5)]
-    plane = ['<g transform="rotate(-8 960 480)">',
-             '<path d="M300,470 Q300,420 380,410 L1500,410 Q1640,420 1680,470 Q1640,520 1500,530 L380,530 Q300,520 300,470Z" fill="#f6f6f2"/>',
-             '<path d="M1500,410 Q1600,415 1650,450 L1480,450 Z" fill="#cfe0ef"/>',
-             '<path d="M380,410 Q500,360 680,360 L760,410Z" fill="#f6f6f2"/>',
-             '<path d="M300,470 L1680,470 Q1660,500 1600,510 L380,510 Q320,505 300,470Z" fill="#7fb4de"/>',
-             '<rect x="380" y="470" width="1220" height="10" fill="#1f3d6e"/>',
-             '<path d="M820,500 L1140,500 L980,820 L860,820Z" fill="#dcdcd6"/><path d="M820,420 L1060,420 L960,180 L880,180Z" fill="#e6e6e0"/>',
-             '<path d="M340,440 L280,250 L360,250 L460,420Z" fill="#7fb4de"/>',
-             flag(300, 290, 70, 42, pole=False)]
-    for x in range(480, 1500, 44):
-        plane.append(f'<rect x="{x}" y="438" width="20" height="16" rx="5" fill="#1f3d6e"/>')
-    plane.append('<rect x="880" y="640" width="90" height="40" rx="18" fill="#bbb"/><rect x="940" y="740" width="90" height="40" rx="18" fill="#bbb"/>')
-    plane.append(g("contrail", '<rect x="40" y="652" width="840" height="10" rx="5" fill="#fff" opacity=".7"/><rect x="100" y="752" width="840" height="10" rx="5" fill="#fff" opacity=".7"/>'))
-    plane.append('</g>')
-    b.append(g("flyby", g("hover", "".join(plane))))
-    b.append(clouds(3, 103, 700, 1000, .9, speed=4))
+    d, s_ = sky("#5f9fe0", "#dfeefa")
+    b = [s_, clouds(5, 101, 80, 500, .7, speed=2.5)]
+    p = ['<g transform="translate(300,360) scale(.82)">',
+         # far wing and engine
+         '<path d="M640,250 L900,250 L700,90 L620,90Z" fill="#c9d4de"/>',
+         '<rect x="700" y="150" width="120" height="44" rx="22" fill="#b9c3cc"/>',
+         # tail
+         '<path d="M40,170 L-30,-40 L50,-40 L190,170Z" fill="#7fb4de"/>',
+         flag(-10, -20, 60, 36, pole=False),
+         '<path d="M-10,190 L-70,150 L60,150 L120,190Z" fill="#c9d4de"/>',
+         # fuselage
+         '<path d="M40,150 Q60,120 200,118 L1300,118 Q1420,118 1500,150 Q1560,190 1500,226 Q1420,262 1300,262 L200,262 Q80,262 40,230Z" fill="#f6f6f2"/>',
+         # 747 hump
+         '<path d="M1060,118 Q1110,50 1260,56 Q1380,62 1440,118Z" fill="#f6f6f2"/>',
+         '<path d="M1360,80 L1420,108 L1360,108Z" fill="#2a3346"/><path d="M1462,150 Q1500,160 1520,180 L1470,176Z" fill="#2a3346"/>',
+         # livery: light blue belly, dark cheatline, gold pinstripe
+         '<path d="M60,214 L1490,214 Q1460,258 1300,262 L200,262 Q90,262 60,214Z" fill="#7fb4de"/>',
+         '<rect x="70" y="196" width="1440" height="12" fill="#1f3d6e"/><rect x="70" y="208" width="1440" height="3" fill="#e0b95e"/>',
+         '<text x="760" y="180" text-anchor="middle" font-family="serif" font-weight="bold" font-size="40" letter-spacing="6" fill="#1f3d6e">UNITED STATES OF AMERICA</text>']
+    for x in range(240, 1420, 34):
+        if 1180 < x < 1230:
+            continue
+        p.append(f'<rect x="{x}" y="132" width="14" height="18" rx="6" fill="#1f3d6e"/>')
+    for x in range(1120, 1380, 30):
+        p.append(f'<rect x="{x}" y="80" width="12" height="15" rx="5" fill="#1f3d6e"/>')
+    p.append('<rect x="1196" y="126" width="34" height="62" rx="6" fill="none" stroke="#9aa6b2" stroke-width="3"/>')
+    # near wing and engines
+    p.append('<path d="M640,236 L940,236 L560,450 L450,450Z" fill="#dfe6ec"/>'
+             '<path d="M640,236 L940,236 L900,252 L630,252Z" fill="#fff" opacity=".6"/>'
+             '<path d="M450,450 L560,450 L540,462 L440,462Z" fill="#7fb4de"/>')
+    for ex, ey in ((560, 360), (720, 290)):
+        p.append(f'<rect x="{ex}" y="{ey}" width="150" height="54" rx="27" fill="#b9c3cc"/><ellipse cx="{ex + 150}" cy="{ey + 27}" rx="10" ry="27" fill="#555"/>'
+                 f'<rect x="{ex + 40}" y="{ey - 20}" width="40" height="22" fill="#c9d4de"/>')
+    p.append(g("contrail", '<rect x="-760" y="347" width="1420" height="10" rx="5" fill="#fff" opacity=".7"/>'
+                           '<rect x="-620" y="297" width="1420" height="10" rx="5" fill="#fff" opacity=".7"/>'))
+    p.append('</g>')
+    b.append(g("flyby", g("hover", "".join(p))))
+    b.append(clouds(3, 103, 760, 1000, .9, speed=4))
     return svg("".join(b), d)
 
 
@@ -1412,28 +1561,45 @@ def a_exit_door():
          '<rect x="640" y="100" width="640" height="30" fill="#e6dcc4"/><rect x="620" y="100" width="40" height="920" fill="#e6dcc4"/><rect x="1260" y="100" width="40" height="920" fill="#e6dcc4"/>',
          g("dooropen", '<path d="M660,120 L460,60 L460,1080 L660,1020Z" fill="#5a3418"/>'),
          g("pulse", '<path d="M660,1020 L1260,1020 L1800,1080 L120,1080Z" fill="#ffe8b0" opacity=".25"/>')]
-    walker = person(960, 1020, .9, suit="#0e0e12", skin="#0e0e12", hair="#0e0e12", tie="#0e0e12", motion="march", shirt="#0e0e12")
+    walker = person(960, 1020, .9, suit="#0e0e12", skin="#0e0e12", hair="#0e0e12", tie="#0e0e12", motion="march", shirt="#0e0e12", face=False)
     b.append(g("walkaway", f'<g transform="translate(960,1020) scale(1.3)"><g transform="translate(-960,-1020)">{walker}</g></g>'))
     return svg("".join(b), d)
 
 
 def a_library():
-    d, s = sky("#8fc0ea", "#f2e7cf")
-    b = [s, clouds(4, 141, 30, 250), '<rect x="0" y="820" width="1920" height="260" fill="#6aa84f"/>',
-         f'<rect x="420" y="420" width="1080" height="400" fill="{CREAM}"/><rect x="400" y="400" width="1120" height="30" fill="#e2d4b5"/>',
-         '<rect x="420" y="430" width="1080" height="80" fill="#b9d7ee" opacity=".7"/>']
-    for x in range(470, 1460, 100):
-        b.append(f'<rect x="{x}" y="520" width="40" height="300" fill="#fbf6ea"/>')
-    b.append(flag(1560, 300, 160, 100, wave=6))
-    return svg("".join(b), d)
+    d, s_ = sky("#8fc0ea", "#f2e7cf")
+    d2, l = lawn(860, "#6aa84f", "#3d7a33")
+    b = [s_, clouds(4, 141, 30, 250), l]
+    trim = "#fbf6ea"
+    b.append(f'<rect x="420" y="430" width="1080" height="420" fill="{CREAM}"/>'
+             f'<rect x="400" y="410" width="1120" height="28" fill="{trim}"/><rect x="400" y="438" width="1120" height="8" fill="#d9ccb0"/>'
+             f'<path d="M640,410 L960,300 L1280,410Z" fill="{trim}"/><path d="M680,404 L960,318 L1240,404Z" fill="#e2d4b5"/>'
+             f'<rect x="540" y="470" width="840" height="380" fill="#d9ccb0"/>'
+             f'<rect x="900" y="640" width="120" height="210" fill="#6a4a2a"/><rect x="910" y="650" width="100" height="200" fill="#8a6a3d"/>')
+    for x in range(560, 1380, 82):
+        b.append(f'<rect x="{x}" y="470" width="38" height="380" fill="{trim}"/><rect x="{x + 26}" y="470" width="12" height="380" fill="#000" opacity=".06"/>'
+                 f'<rect x="{x - 6}" y="462" width="50" height="12" fill="{trim}"/><rect x="{x - 6}" y="840" width="50" height="12" fill="{trim}"/>')
+    b.append('<text x="960" y="432" text-anchor="middle" font-family="serif" font-weight="bold" font-size="22" letter-spacing="8" fill="#8a7a5a">PRESIDENTIAL LIBRARY</text>')
+    for k in range(4):
+        b.append(f'<rect x="{500 - k * 30}" y="{850 + k * 12}" width="{920 + k * 60}" height="12" fill="{_shade(trim, .95 - k * .03)}"/>')
+    b.append(leafy_tree(230, 900, 1.0, seed=21) + leafy_tree(1690, 900, 1.0, seed=22))
+    b.append(flag(1560, 260, 160, 100, wave=6))
+    return svg("".join(b), d + d2)
 
 
 def a_final():
     d, s = sky("#0b1a33", "#3a2a4d")
     d2, l = lawn(860, "#1d3b2a", "#0b1a12")
     b = [s, stars(200, 99, 600), white_house(960, 860, 1.25, lit=True, fill="#e7dcc4"), l,
-         g("walkaway", person(960, 1060, .55, skin="#0e0e12", suit="#0e0e12", hair="#0e0e12", tie="#0e0e12", motion="march"))]
+         g("walkaway", person(960, 1060, .55, skin="#0e0e12", suit="#0e0e12", hair="#0e0e12", tie="#0e0e12", motion="march", face=False, shirt="#0e0e12"))]
     return svg("".join(b), d + d2)
 
 
-ART = {name[2:]: fn for name, fn in list(globals().items()) if name.startswith("a_") and callable(fn)}
+def _seeded(name, fn):
+    def run():
+        _rng.seed(name)
+        return fn()
+    return run
+
+
+ART = {name[2:]: _seeded(name, fn) for name, fn in list(globals().items()) if name.startswith("a_") and callable(fn)}

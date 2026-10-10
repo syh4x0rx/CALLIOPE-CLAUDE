@@ -54,7 +54,7 @@ DIALOGUE = {
     "The campaign": [("pres", "Thank you, Iowa!", "am_michael", 960, 225, 1.0)],
     "Same speech,\nagain": [("pres", "And that is why... I'm running!", "am_michael", 960, 225, 1.0)],
     "You won": [("pres", "We actually did it!", "am_michael", 960, 225, 1.0)],
-    "Meanwhile...": [("mover", "Where does the couch go?!", "am_echo", 560, 715, 1.05)],
+    "Meanwhile...": [("mover", "Where does the couch go?!", "am_echo", 1010, 725, 1.05)],
     "The chef": [("chef", "Dinner is served, Mr. President.", "am_adam", 1380, 395, 1.0)],
     "Back to back": [("pres", "Prime Minister! Great to hear from you.", "am_michael", 960, 395, 1.05)],
     "Secret Service": [("agent", "Sir. Not that door.", "am_onyx", 560, 540, .95)],
