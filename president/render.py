@@ -2,7 +2,8 @@
 """Render "What It's Like to Be President" from scenes.txt.
 
 Pipeline: parse scenes -> synthesize narration per scene (Kokoro, offline)
--> lay out a timeline -> draw animated frames with Pillow -> encode with ffmpeg.
+-> draw the illustrations (art.py) -> lay out a timeline -> animate frames with
+Pillow over the illustrations -> encode with ffmpeg.
 
 Usage:
   python3 render.py --models DIR --work DIR --out president.mp4 [--speed 1.0]
@@ -13,7 +14,6 @@ import argparse
 import json
 import math
 import os
-import random
 import re
 import subprocess
 from multiprocessing import Pool
@@ -31,20 +31,6 @@ SANS_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 GOLD = (222, 184, 98)
 WHITE = (245, 242, 235)
-# (top colour, bottom colour) per chapter, cycling.
-PALETTES = [
-    ((10, 18, 40), (34, 14, 28)),
-    ((12, 30, 58), (6, 12, 26)),
-    ((40, 12, 20), (10, 14, 32)),
-    ((8, 34, 44), (6, 10, 22)),
-    ((22, 22, 30), (4, 6, 14)),
-    ((48, 16, 16), (12, 8, 14)),
-    ((16, 26, 52), (30, 10, 24)),
-    ((10, 40, 60), (8, 14, 30)),
-    ((30, 20, 36), (6, 8, 18)),
-    ((20, 14, 10), (8, 10, 26)),
-]
-
 SCENE_GAP = 0.55        # silence after each scene
 PARAGRAPH_GAP = 0.90    # extra silence at a paragraph break
 CHAPTER_CARD = 3.2      # seconds a chapter title card holds
@@ -111,11 +97,19 @@ def synth(chapters, models, work, speed, voice):
 
 def build_timeline(chapters):
     """Return a flat list of segments with absolute start/end seconds."""
+    from art_map import ART_FOR, REPEAT
+    seen = set()
+    for ch in chapters:
+        for sc in ch["scenes"]:
+            h = sc["head"]
+            sc["art"] = REPEAT[h] if h in seen and h in REPEAT else ART_FOR[h]
+            seen.add(h)
     t, segs, prev_para = INTRO_PAD, [], None
     for ci, ch in enumerate(chapters):
         if ci > 0:  # the cold open starts straight on the hook
             segs.append({"kind": "card", "ci": ci, "start": t,
-                         "end": t + CHAPTER_CARD, "title": ch["title"]})
+                         "end": t + CHAPTER_CARD, "title": ch["title"],
+                         "art": ch["scenes"][0]["art"]})
             t += CHAPTER_CARD
         for sc in ch["scenes"]:
             if prev_para is not None and sc["para"] != prev_para:
@@ -123,7 +117,7 @@ def build_timeline(chapters):
             prev_para = sc["para"]
             segs.append({"kind": "scene", "ci": ci, "start": t,
                          "voice_at": t + 0.15, "end": t + 0.15 + sc["dur"] + SCENE_GAP,
-                         "head": sc["head"], "vo": sc["vo"], "wav": sc["wav"],
+                         "head": sc["head"], "vo": sc["vo"], "wav": sc["wav"], "art": sc["art"],
                          "chapter": ch["title"]})
             t = segs[-1]["end"]
         prev_para = None
@@ -131,7 +125,7 @@ def build_timeline(chapters):
     for a, b in zip(segs, segs[1:]):
         a["end"] = b["start"]
     segs.append({"kind": "outro", "ci": len(chapters) - 1, "start": segs[-1]["end"],
-                 "end": segs[-1]["end"] + OUTRO})
+                 "end": segs[-1]["end"] + OUTRO, "art": "final"})
     return segs
 
 
@@ -194,45 +188,6 @@ def font(path, size):
     return ImageFont.truetype(path, size)
 
 
-def make_background(ci, seed):
-    """Oversized gradient with stars, stripes and a vignette, for slow drift."""
-    top, bot = PALETTES[ci % len(PALETTES)]
-    bw, bh = int(W * 1.15), int(H * 1.15)
-    grad = np.linspace(0, 1, bh)[:, None, None]
-    arr = (np.array(top)[None, None] * (1 - grad) + np.array(bot)[None, None] * grad)
-    arr = np.repeat(arr, bw, axis=1)
-    img = Image.fromarray(arr.astype(np.uint8), "RGB")
-    over = Image.new("RGBA", (bw, bh), (0, 0, 0, 0))
-    d = ImageDraw.Draw(over)
-    rnd = random.Random(seed)
-    # Faint diagonal stripes, like a flag in shadow.
-    for k in range(-bh, bw, 140):
-        d.polygon([(k, 0), (k + 60, 0), (k + 60 + bh * 0.5, bh), (k + bh * 0.5, bh)],
-                  fill=(255, 255, 255, 7))
-    # Star field.
-    for _ in range(220):
-        x, y = rnd.uniform(0, bw), rnd.uniform(0, bh)
-        r = rnd.choice([1, 1, 1.5, 2, 2.5])
-        a = rnd.randint(30, 120)
-        d.ellipse([x - r, y - r, x + r, y + r], fill=(255, 240, 210, a))
-    # A few large soft five-point stars.
-    for _ in range(4):
-        cx, cy, R = rnd.uniform(0, bw), rnd.uniform(0, bh), rnd.uniform(90, 220)
-        pts = []
-        for p in range(10):
-            ang = -math.pi / 2 + p * math.pi / 5
-            rr = R if p % 2 == 0 else R * 0.4
-            pts.append((cx + rr * math.cos(ang), cy + rr * math.sin(ang)))
-        d.polygon(pts, fill=(255, 255, 255, 10))
-    img = Image.alpha_composite(img.convert("RGBA"), over)
-    # Vignette.
-    yy, xx = np.mgrid[0:bh, 0:bw]
-    dist = np.sqrt(((xx - bw / 2) / (bw / 2)) ** 2 + ((yy - bh / 2) / (bh / 2)) ** 2)
-    vig = np.clip(1.15 - 0.55 * dist, 0.35, 1)[..., None]
-    out = (np.asarray(img.convert("RGB")).astype(np.float32) * vig).astype(np.uint8)
-    return Image.fromarray(out, "RGB")
-
-
 def wrap(draw, text, fnt, max_w):
     lines = []
     for para in text.split("\n"):
@@ -250,10 +205,10 @@ def wrap(draw, text, fnt, max_w):
 
 
 def fit_headline(draw, text):
-    for size in (190, 170, 150, 130, 115, 100, 88, 76):
+    for size in (118, 106, 96, 86, 76, 68):
         f = font(SERIF_BOLD, size)
-        lines = wrap(draw, text, f, W - 320)
-        if len(lines) <= 2 and all(draw.textlength(l, font=f) <= W - 320 for l in lines):
+        lines = wrap(draw, text, f, W - 400)
+        if len(lines) <= 2 and all(draw.textlength(l, font=f) <= W - 400 for l in lines):
             return f, lines
     return f, lines
 
@@ -264,48 +219,62 @@ def ease(x):
 
 
 def text_layer_scene(seg):
-    """Static text pieces rendered once per scene; animated by offsets/alpha."""
+    """Lower-third text pieces rendered once per scene; animated by offsets/alpha."""
     scratch = ImageDraw.Draw(Image.new("RGBA", (10, 10)))
+    cap = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(cap)
+    cf = font(SANS, 38)
+    clines = wrap(d, seg["vo"], cf, W - 300)
+    cap_top = H - 70 - 52 * len(clines)
+    for i, line in enumerate(clines):
+        x, y = 150, cap_top + i * 52
+        d.text((x + 2, y + 2), line, font=cf, fill=(0, 0, 0, 200))
+        d.text((x, y), line, font=cf, fill=WHITE)
+
     hf, hlines = fit_headline(scratch, seg["head"])
     head = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(head)
-    lh = int(hf.size * 1.08)
+    lh = int(hf.size * 1.05)
     block_h = lh * len(hlines)
-    y0 = int(H * 0.40 - block_h / 2)
+    y0 = cap_top - 34 - block_h
     for i, line in enumerate(hlines):
-        tw = d.textlength(line, font=hf)
-        x, y = (W - tw) / 2, y0 + i * lh
-        d.text((x + 5, y + 6), line, font=hf, fill=(0, 0, 0, 150))
+        x, y = 146, y0 + i * lh
+        for ox, oy in ((4, 5), (2, 3), (-2, 3)):
+            d.text((x + ox, y + oy), line, font=hf, fill=(0, 0, 0, 170))
         d.text((x, y), line, font=hf, fill=WHITE)
-    head_bottom = y0 + block_h + 48
-
-    cap = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(cap)
-    cf = font(SANS, 40)
-    clines = wrap(d, seg["vo"], cf, W - 360)
-    ch = 54 * len(clines) + 40
-    top = H - 90 - ch
-    d.rounded_rectangle([140, top, W - 140, H - 90], radius=18, fill=(0, 0, 0, 140))
-    for i, line in enumerate(clines):
-        tw = d.textlength(line, font=cf)
-        d.text(((W - tw) / 2, top + 22 + i * 54), line, font=cf, fill=WHITE)
+    rule_y = y0 - 18
 
     label = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(label)
     lf = font(SANS_BOLD, 26)
-    d.text((90, 62), seg["chapter"].upper(), font=lf, fill=GOLD + (230,))
-    return head, head_bottom, cap, label
+    d.text((92, 62), seg["chapter"].upper(), font=lf, fill=GOLD + (230,))
+    return head, rule_y, cap, label
 
 
 def render_segment(args):
     seg, idx, work, total = args
     out = os.path.join(work, "frames", f"{idx:03d}.mp4")
     meta = out + ".json"
-    sig = json.dumps({k: seg.get(k) for k in ("kind", "head", "vo", "title", "start", "end", "ci")})
+    sig = json.dumps({k: seg.get(k) for k in ("kind", "head", "vo", "title", "start", "end", "ci", "art")})
     if os.path.exists(out) and os.path.exists(meta) and open(meta).read() == sig:
         return out
-    bg = make_background(seg["ci"], seed=seg["ci"] * 7 + 3)
-    bw, bh = bg.size
+    art_img = Image.open(os.path.join(work, "art", seg["art"] + ".png")).convert("RGB")
+    art_img = art_img.resize((int(W * 1.12), int(H * 1.12)), Image.LANCZOS)
+    if seg["kind"] != "scene":
+        art_img = art_img.filter(ImageFilter.GaussianBlur(10))
+        art_img = Image.eval(art_img, lambda v: int(v * 0.45))
+    aw, ah = art_img.size
+    shade = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    if seg["kind"] == "scene":
+        col = np.zeros((H, 1), dtype=np.float32)
+        yy = np.arange(H, dtype=np.float32)
+        col[:, 0] = np.maximum(np.clip(1 - yy / 200, 0, 1) * 150,
+                               np.clip((yy - (H - 470)) / 380, 0, 1) ** 0.8 * 225)
+        alpha = Image.fromarray(np.repeat(col, W, axis=1).astype(np.uint8), "L")
+        shade = Image.new("RGBA", (W, H), (5, 8, 16, 255))
+        shade.putalpha(alpha)
+    zoom_in = idx % 2 == 0
+    pan = (-1) ** (idx // 2)
     f0 = round(seg["start"] * FPS)
     f1 = round(seg["end"] * FPS)
     n = f1 - f0
@@ -316,7 +285,7 @@ def render_segment(args):
         stdin=subprocess.PIPE)
 
     if seg["kind"] == "scene":
-        head, head_bottom, cap, label = text_layer_scene(seg)
+        head, rule_y, cap, label = text_layer_scene(seg)
     else:
         layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         d = ImageDraw.Draw(layer)
@@ -350,10 +319,15 @@ def render_segment(args):
     for i in range(n):
         lt = i / FPS                      # local time
         gt = seg["start"] + lt            # global time
-        # Slow drift across the oversized background.
-        px = (bw - W) * (0.5 + 0.5 * math.sin(gt * 0.035 + seg["ci"]))
-        py = (bh - H) * (0.5 + 0.5 * math.cos(gt * 0.027 + seg["ci"] * 2))
-        frame = bg.crop((int(px), int(py), int(px) + W, int(py) + H)).convert("RGBA")
+        # Ken Burns: slow zoom plus a gentle pan across the illustration.
+        p = i / max(n - 1, 1)
+        z = 1.0 + 0.10 * (p if zoom_in else 1 - p)
+        cw, chh = aw / 1.12 / z, ah / 1.12 / z
+        cx = aw / 2 + pan * (p - 0.5) * (aw - cw) * 0.8
+        cy = ah / 2
+        box = (cx - cw / 2, cy - chh / 2, cx + cw / 2, cy + chh / 2)
+        frame = art_img.resize((W, H), Image.BILINEAR, box=box).convert("RGBA")
+        frame.alpha_composite(shade)
         if seg["kind"] == "scene":
             a = ease(lt / 0.45)
             dy = int((1 - a) * 40)
@@ -361,12 +335,11 @@ def render_segment(args):
             if a < 1:
                 h.putalpha(h.getchannel("A").point(lambda v, a=a: int(v * a)))
             frame.alpha_composite(h, (0, dy))
-            # Gold rule under the headline grows in.
+            # Gold rule above the headline grows in from the left.
             g = ease((lt - 0.2) / 0.6)
             if g > 0:
                 ImageDraw.Draw(frame).rectangle(
-                    [W / 2 - 160 * g, head_bottom + dy, W / 2 + 160 * g, head_bottom + 6 + dy],
-                    fill=GOLD)
+                    [150, rule_y + dy, 150 + 200 * g, rule_y + 6 + dy], fill=GOLD)
             c = ease((lt - 0.1) / 0.3)
             if c < 1:
                 cc = cap.copy()
@@ -421,6 +394,8 @@ def main():
         json.dump(segs, f, indent=1)
     if args.audio_only:
         return
+    import art
+    art.render_all(os.path.join(args.work, "art"))
     audio = build_audio(segs, args.work)
     os.makedirs(os.path.join(args.work, "frames"), exist_ok=True)
     with Pool(args.jobs) as pool:
