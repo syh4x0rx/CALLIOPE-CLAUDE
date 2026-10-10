@@ -45,9 +45,9 @@ PALETTES = [
     ((20, 14, 10), (8, 10, 26)),
 ]
 
-SCENE_GAP = 0.30        # silence after each scene
-PARAGRAPH_GAP = 0.55    # extra silence at a paragraph break
-CHAPTER_CARD = 2.6      # seconds a chapter title card holds
+SCENE_GAP = 0.55        # silence after each scene
+PARAGRAPH_GAP = 0.90    # extra silence at a paragraph break
+CHAPTER_CARD = 3.2      # seconds a chapter title card holds
 INTRO_PAD = 0.6
 OUTRO = 4.0
 
@@ -277,7 +277,7 @@ def text_layer_scene(seg):
         x, y = (W - tw) / 2, y0 + i * lh
         d.text((x + 5, y + 6), line, font=hf, fill=(0, 0, 0, 150))
         d.text((x, y), line, font=hf, fill=WHITE)
-    head_bottom = y0 + block_h + 20
+    head_bottom = y0 + block_h + 48
 
     cap = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(cap)
