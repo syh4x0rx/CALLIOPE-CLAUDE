@@ -286,6 +286,64 @@ def white_house(cx, base, s=1.0, lit=True, fill=CREAM):
     return "".join(out)
 
 
+def leafy_tree(x, base, s=1.0, seed=0, greens=("#2f6b35", "#3d8a43", "#56a85a")):
+    """Deciduous tree: trunk with branches and a layered, shaded canopy."""
+    r = random.Random(seed)
+    dark, mid, light = greens
+    out = [f'<g transform="translate({x},{base}) scale({s})">',
+           '<ellipse cx="0" cy="4" rx="150" ry="22" fill="#000" opacity=".18"/>',
+           '<path d="M-18,0 Q-14,-120 -10,-210 L10,-210 Q14,-120 22,0Z" fill="#5b3b24"/>',
+           '<path d="M2,-120 Q40,-170 70,-190" stroke="#5b3b24" stroke-width="12" fill="none" stroke-linecap="round"/>',
+           '<path d="M-4,-150 Q-40,-200 -64,-215" stroke="#5b3b24" stroke-width="10" fill="none" stroke-linecap="round"/>',
+           '<path d="M8,0 Q14,-120 10,-210 L4,-210 Q6,-120 0,0Z" fill="#000" opacity=".15"/>']
+    canopy = []
+    for layer, col, n, rr in ((0, dark, 9, 72), (1, mid, 8, 62), (2, light, 6, 46)):
+        for i in range(n):
+            a = r.uniform(0, 2 * math.pi)
+            d = r.uniform(0, 95 - layer * 25)
+            cx = math.cos(a) * d * 1.25 + layer * -10
+            cy = -290 + math.sin(a) * d * .8 - layer * 18
+            canopy.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{rr * r.uniform(.8, 1.15):.0f}" fill="{col}"/>')
+    out.append(g("treesway", "".join(canopy), desync(3.5, 5)))
+    out.append('</g>')
+    return "".join(out)
+
+
+def pine(x, base, h, dark, light, sway=True):
+    """Layered pine: trunk plus tiers with a lit left side."""
+    w = h * .42
+    parts = [f'<rect x="{x - h * .03:.0f}" y="{base - h * .12:.0f}" width="{h * .06:.0f}" height="{h * .14:.0f}" fill="#3b2818"/>']
+    tiers = 4
+    for t in range(tiers):
+        tb = base - h * .1 - t * h * .2
+        tw = w * (1 - t * .2)
+        top = tb - h * .38
+        parts.append(f'<path d="M{x - tw:.0f},{tb:.0f} Q{x - tw * .5:.0f},{tb - h * .06:.0f} {x:.0f},{top:.0f} '
+                     f'Q{x + tw * .5:.0f},{tb - h * .06:.0f} {x + tw:.0f},{tb:.0f} Q{x:.0f},{tb - h * .05:.0f} {x - tw:.0f},{tb:.0f}Z" fill="{dark}"/>')
+        parts.append(f'<path d="M{x - tw:.0f},{tb:.0f} Q{x - tw * .5:.0f},{tb - h * .06:.0f} {x:.0f},{top:.0f} '
+                     f'L{x - tw * .1:.0f},{tb - h * .04:.0f} Q{x - tw * .5:.0f},{tb - h * .02:.0f} {x - tw:.0f},{tb:.0f}Z" fill="{light}"/>')
+    body = "".join(parts)
+    return g("treesway", body, desync(3.5, 5.5)) if sway else body
+
+
+def hedge(y, x0=0, x1=W, color="#2f6b35", light="#3f8a45", seed=3, roses=True):
+    """Trimmed hedge row with rounded top, highlight and rose clusters."""
+    r = random.Random(seed)
+    out = [f'<path d="M{x0},{y + 160} L{x0},{y + 30} Q{x0},{y} {x0 + 40},{y} L{x1 - 40},{y} Q{x1},{y} {x1},{y + 30} L{x1},{y + 160}Z" fill="{color}"/>',
+           f'<path d="M{x0 + 20},{y + 26} Q{x0 + 20},{y + 10} {x0 + 50},{y + 10} L{x1 - 50},{y + 10}" stroke="{light}" stroke-width="14" fill="none" stroke-linecap="round" opacity=".8"/>']
+    for i in range(int((x1 - x0) / 22)):
+        cx = x0 + 10 + i * 22 + r.uniform(-6, 6)
+        out.append(f'<circle cx="{cx:.0f}" cy="{y + r.uniform(4, 14):.0f}" r="{r.uniform(10, 16):.0f}" fill="{color}"/>')
+    if roses:
+        for i in range(int((x1 - x0) / 70)):
+            cx, cy = x0 + 30 + i * 70 + r.uniform(-20, 20), y + r.uniform(20, 120)
+            col = r.choice(["#d23a52", "#e8667e", "#f3a1b3", "#fff1f3"])
+            out.append(g("sway", f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="13" fill="{col}"/>'
+                                 f'<circle cx="{cx - 3:.0f}" cy="{cy - 3:.0f}" r="6" fill="{_shade(col, .75)}"/>'
+                                 f'<path d="M{cx - 14:.0f},{cy + 8:.0f} q8,-6 14,0" stroke="{light}" stroke-width="5" fill="none"/>', desync(2.5, 4)))
+    return "".join(out)
+
+
 def lawn(y, top="#2f6b3a", bot="#173d22"):
     return (grad("lawn", top, bot),
             f'<rect x="0" y="{y}" width="{W}" height="{H - y}" fill="url(#lawn)"/>')
@@ -536,15 +594,14 @@ def a_election():
 
 
 def a_white_house_day():
-    d, s = sky("#7fb1e3", "#e7f0f7")
+    d, s_ = sky("#7fb1e3", "#e7f0f7")
     d2, l = lawn(860)
-    b = [s, g("pulse", '<circle cx="1600" cy="200" r="90" fill="#fff6d0"/>'), clouds(5, 21, 40, 300),
+    b = [s_, g("pulse", '<circle cx="1600" cy="200" r="90" fill="#fff6d0"/>'), clouds(5, 21, 40, 300),
          white_house(960, 860, 1.25, lit=False), l]
     b.append('<ellipse cx="960" cy="1000" rx="260" ry="50" fill="#5c9c5a"/><ellipse cx="960" cy="990" rx="70" ry="20" fill="#9fd3f0"/>')
     b.append(g("fountain", '<path d="M960,990 Q940,900 960,880 Q980,900 960,990" fill="#cfeaff" opacity=".8"/>'))
-    for x in (150, 1770):
-        b.append(g("sway", f'<circle cx="{x}" cy="700" r="170" fill="#2d5e32"/>', desync(3, 4)) +
-                 f'<rect x="{x - 15}" y="780" width="30" height="100" fill="#4a3320"/>')
+    b.append(hedge(900, 0, 420, seed=4, roses=False) + hedge(900, 1500, 1920, seed=5, roses=False))
+    b.append(leafy_tree(250, 930, 1.1, seed=1) + leafy_tree(1680, 930, 1.1, seed=2))
     b.append(g("birds", "".join(f'<path d="M{x},{y} q15,-14 30,0 q15,-14 30,0" stroke="#223" stroke-width="5" fill="none"/>'
                                 for x, y in ((200, 200), (280, 240), (340, 190)))))
     return svg("".join(b), d + d2)
@@ -581,20 +638,45 @@ def a_movers():
 
 
 def a_toothbrush():
-    d, s = sky("#e8eef3", "#c4d2dc")
-    b = [s, '<rect x="0" y="700" width="1920" height="380" fill="#f6f2ea"/>',
-         '<rect x="0" y="690" width="1920" height="20" fill="#d9d2c4"/>']
-    for x in range(0, 1920, 120):
-        b.append(f'<line x1="{x}" y1="0" x2="{x}" y2="690" stroke="#d3dde4" stroke-width="3"/>')
-    b.append('<rect x="560" y="160" width="800" height="420" rx="30" fill="#dfe9ef" stroke="#c9b27a" stroke-width="18"/>')
-    b.append(g("glint", '<rect x="560" y="160" width="80" height="420" fill="#fff" opacity=".4" transform="skewX(-20)"/>'))
-    b.append('<path d="M820,700 L800,440 L960,440 L940,700Z" fill="#9fc6dd" opacity=".9"/>')
-    b.append(g("dropin", f'<rect x="900" y="300" width="22" height="260" rx="10" fill="{RED}" transform="rotate(-12 911 430)"/>'
-                         f'<rect x="860" y="260" width="30" height="70" rx="6" fill="{WHITE}" transform="rotate(-12 911 430)"/>', delay(.2)))
-    b.append(g("dropin", '<rect x="960" y="320" width="22" height="240" rx="10" fill="#2d58b8" transform="rotate(10 971 440)"/>', delay(.45)))
-    for i, (x, y, r_) in enumerate(((1500, 300, 50), (1380, 220, 26), (600, 260, 30))):
-        b.append(g("sparkle", star_shape(x, y, r_, GOLD, .8), f"animation-delay:-{i * .5:.1f}s"))
-    return svg("".join(b), d)
+    defs = (grad("bwall", "#eaf3f7", "#cfe0e8") + grad("mir", "#d9ecf5", "#a9cbdb", 1, 1) +
+            grad("porc", "#ffffff", "#e3e9ee") + grad("cup", "#bfe2f2", "#8cc5de"))
+    b = [f'<rect width="{W}" height="{H}" fill="url(#bwall)"/>']
+    for y in range(0, 700, 90):
+        for x in range(-45 * (y // 90 % 2), W, 90):
+            b.append(f'<rect x="{x + 3}" y="{y + 3}" width="84" height="84" rx="6" fill="#f4fafc" stroke="#d3e3ea" stroke-width="3"/>')
+    # Mirror with a reflection streak.
+    b.append('<rect x="520" y="70" width="880" height="470" rx="40" fill="#c9a24e"/>'
+             '<rect x="540" y="90" width="840" height="430" rx="30" fill="url(#mir)"/>'
+             + g("glint", '<path d="M640,90 L740,90 L560,520 L540,520 L540,330Z" fill="#fff" opacity=".35"/>')
+             + '<path d="M1180,90 L1220,90 L1100,520 L1060,520Z" fill="#fff" opacity=".2"/>')
+    # Counter and sink.
+    b.append('<rect x="0" y="690" width="1920" height="390" fill="#7a5a3e"/>'
+             '<rect x="0" y="660" width="1920" height="44" fill="url(#porc)"/><rect x="0" y="700" width="1920" height="8" fill="#000" opacity=".12"/>'
+             '<ellipse cx="960" cy="690" rx="300" ry="40" fill="#cfd9df"/><ellipse cx="960" cy="694" rx="270" ry="30" fill="#e8eef2"/>'
+             '<rect x="940" y="590" width="40" height="80" rx="10" fill="#b9c3c9"/>'
+             '<path d="M960,600 Q960,560 1010,560 L1060,560 Q1070,560 1070,575 L1070,590 L1040,590 L1040,585 L1000,585 Q985,585 985,600Z" fill="#cdd6db"/>'
+             '<rect x="900" y="615" width="40" height="18" rx="8" fill="#b9c3c9"/><rect x="980" y="615" width="40" height="18" rx="8" fill="#b9c3c9"/>')
+    b.append(g("drip", '<ellipse cx="1055" cy="600" rx="5" ry="8" fill="#9fd3f0"/>'))
+    # Cup with two toothbrushes.
+    brush = lambda x, rot, col, head: (
+        f'<g transform="rotate({rot} {x} 600)">'
+        f'<rect x="{x - 9}" y="330" width="18" height="300" rx="9" fill="{col}"/>'
+        f'<rect x="{x - 9}" y="430" width="18" height="40" rx="6" fill="#fff" opacity=".35"/>'
+        f'<rect x="{x - 11}" y="300" width="22" height="50" rx="8" fill="{col}"/>'
+        f'<rect x="{x + 11}" y="304" width="22" height="42" rx="3" fill="{head}"/>'
+        + "".join(f'<line x1="{x + 13}" y1="{308 + k * 7}" x2="{x + 31}" y2="{308 + k * 7}" stroke="#fff" stroke-width="3"/>' for k in range(6))
+        + '</g>')
+    b.append(g("dropin", brush(560, -8, RED, "#8fd0ef"), delay(.25)) + g("dropin", brush(600, 9, "#2d58b8", "#bdeaa0"), delay(.45)))
+    b.append('<path d="M500,520 L670,520 L655,680 Q585,696 515,680Z" fill="url(#cup)" opacity=".9"/>'
+             '<path d="M520,530 L540,530 L535,670 L525,668Z" fill="#fff" opacity=".45"/>')
+    # Toothpaste tube.
+    b.append(g("slidein-r", '<g transform="rotate(-6 1400 650)"><path d="M1260,620 L1500,600 L1520,660 L1270,680Z" fill="#fff"/>'
+             f'<path d="M1300,616 L1460,603 L1478,664 L1310,676Z" fill="{RED}"/>'
+             '<text x="1385" y="652" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="30" fill="#fff" transform="rotate(-4 1385 652)">FRESH</text>'
+             '<rect x="1500" y="610" width="40" height="44" rx="6" fill="#2d58b8"/></g>', delay(.6)))
+    for i, (x, y, r_) in enumerate(((700, 300, 34), (470, 240, 22), (760, 220, 18))):
+        b.append(g("sparkle", star_shape(x, y, r_, "#fff", .95), f"animation-delay:-{i * .5:.1f}s"))
+    return svg("".join(b), defs)
 
 
 def a_bowling():
@@ -727,21 +809,21 @@ def a_world_map():
 
 
 def a_colonnade():
-    d, s = sky("#9ccbf0", "#f5f0e2")
-    b = [s, clouds(3, 51, 30, 140), '<rect x="0" y="760" width="1920" height="320" fill="#c9bfa8"/>']
+    d, s_ = sky("#9ccbf0", "#f5f0e2")
+    b = [s_, clouds(3, 51, 30, 140)]
+    b.append(leafy_tree(1700, 760, .9, seed=7) + leafy_tree(250, 760, .8, seed=8))
+    b.append('<rect x="0" y="740" width="1920" height="340" fill="#d8cfb9"/>'
+             '<rect x="0" y="740" width="1920" height="14" fill="#c4b99f"/>')
     for i in range(9):
         x = 120 + i * 210
         h = 520 + i * 10
         b.append(f'<rect x="{x}" y="{760 - h}" width="60" height="{h}" fill="{WHITE}"/>'
-                 f'<rect x="{x - 12}" y="{760 - h - 20}" width="84" height="22" fill="#e6dcc4"/>')
-    b.append(f'<rect x="0" y="160" width="1920" height="70" fill="{CREAM}"/>')
+                 f'<rect x="{x + 40}" y="{760 - h}" width="20" height="{h}" fill="#000" opacity=".06"/>'
+                 f'<rect x="{x - 12}" y="{760 - h - 20}" width="84" height="22" fill="#e6dcc4"/>'
+                 f'<rect x="{x - 10}" y="742" width="80" height="18" fill="#e6dcc4"/>')
+    b.append(f'<rect x="0" y="160" width="1920" height="70" fill="{CREAM}"/><rect x="0" y="222" width="1920" height="8" fill="#000" opacity=".08"/>')
     b.append(g("walk", person(500, 900, .7, skin=SKIN[0], motion="march"), "--dx:900px;animation-duration:9s"))
-    r = random.Random(3)
-    for i in range(40):
-        x = r.uniform(0, W)
-        b.append(g("sway", f'<circle cx="{x:.0f}" cy="{r.uniform(800, 1060):.0f}" r="{r.uniform(18, 34):.0f}" fill="{r.choice([RED, "#e75a7c", "#f39ab0"])}"/>', desync(2, 3)))
-    for i in range(30):
-        b.append(f'<circle cx="{r.uniform(0, W):.0f}" cy="{r.uniform(830, 1080):.0f}" r="{r.uniform(26, 50):.0f}" fill="#3d7a3d" opacity=".8"/>')
+    b.append(hedge(815, -20, 1940, seed=9))
     return svg("".join(b), d)
 
 
@@ -1093,18 +1175,33 @@ def a_easter():
 
 
 def a_christmas_tree():
-    d, s = sky("#0b1a33", "#1f3d6e")
-    b = [s, stars(120, 31, 700), '<rect x="0" y="880" width="1920" height="200" fill="#e8eef5"/>',
+    d, s_ = sky("#0b1a33", "#1f3d6e")
+    b = [s_, stars(120, 31, 700), '<rect x="0" y="880" width="1920" height="200" fill="#e8eef5"/>',
+         '<ellipse cx="860" cy="890" rx="360" ry="34" fill="#c9d4e2"/>',
          white_house(1500, 880, .45, lit=True, fill="#d8dfe8")]
-    for w, y in ((520, 880), (440, 720), (360, 570), (260, 430)):
-        b.append(f'<path d="M{760 - w / 2 + 100},{y} L{860},{y - 260} L{960 + w / 2 - 100},{y}Z" fill="#1f6b3a"/>')
+    b.append('<rect x="828" y="820" width="64" height="80" fill="#5a3418"/>')
+    tiers = [(860, 860, 330), (860, 720, 280), (860, 585, 225), (860, 455, 170), (860, 335, 115)]
+    for k, (cx, base, hw) in enumerate(tiers):
+        top = base - 230
+        b.append(f'<path d="M{cx - hw},{base} Q{cx - hw * .55},{base - 40} {cx},{top} Q{cx + hw * .55},{base - 40} {cx + hw},{base} '
+                 f'Q{cx + hw * .7},{base + 22} {cx + hw * .45},{base - 6} Q{cx + hw * .2},{base + 24} {cx},{base - 4} '
+                 f'Q{cx - hw * .2},{base + 24} {cx - hw * .45},{base - 6} Q{cx - hw * .7},{base + 22} {cx - hw},{base}Z" fill="#1d6b3a"/>')
+        b.append(f'<path d="M{cx - hw},{base} Q{cx - hw * .55},{base - 40} {cx},{top} L{cx - hw * .08},{base - 10} '
+                 f'Q{cx - hw * .45},{base + 10} {cx - hw},{base}Z" fill="#2a8a4c"/>')
+        b.append(f'<path d="M{cx - hw * .8},{base - 50} Q{cx},{base - 10} {cx + hw * .8},{base - 70}" stroke="#e0b95e" stroke-width="7" fill="none" opacity=".9"/>')
     r = random.Random(32)
-    for i in range(70):
-        y = r.uniform(240, 860)
-        half = (y - 170) * .42
-        x = 860 + r.uniform(-half, half)
-        b.append(g("tw", f'<circle cx="{x:.0f}" cy="{y:.0f}" r="9" fill="{r.choice(["#ffd98a", RED, "#9ad0f3", "#fff"])}"/>', desync(.6, 1.5)))
-    b.append(g("pulse", star_shape(860, 170, 60, GOLD)) + '<rect x="830" y="880" width="60" height="80" fill="#5a3418"/>')
+    for i in range(60):
+        y = r.uniform(240, 850)
+        half = (y - 160) * .44
+        x = 860 + r.uniform(-half, half) * .85
+        col = r.choice(["#ffd98a", RED, "#9ad0f3", "#fff", "#e0b95e"])
+        b.append(g("tw", f'<circle cx="{x:.0f}" cy="{y:.0f}" r="{r.choice([8, 10, 13])}" fill="{col}"/>'
+                         f'<circle cx="{x - 3:.0f}" cy="{y - 3:.0f}" r="3" fill="#fff" opacity=".7"/>', desync(.6, 1.6)))
+    b.append(g("pulse", f'<circle cx="860" cy="120" r="70" fill="#ffd98a" opacity=".25"/>{star_shape(860, 120, 55, GOLD)}'))
+    for i, x in enumerate((700, 960, 1040)):
+        col = [RED, "#2d58b8", GOLD][i]
+        b.append(f'<rect x="{x}" y="850" width="90" height="70" fill="{col}"/><rect x="{x + 38}" y="850" width="14" height="70" fill="#fff"/>'
+                 f'<rect x="{x}" y="878" width="90" height="12" fill="#fff"/>')
     b.append(snow())
     return svg("".join(b), d)
 
@@ -1171,23 +1268,35 @@ def a_helicopter():
 
 
 def a_camp_david():
-    d, s = sky("#e89a5a", "#5a3a5e")
-    b = [s, g("pulse", '<circle cx="1400" cy="520" r="120" fill="#ffd38a" opacity=".85"/>'), clouds(3, 121, 60, 300, .35)]
+    d, s_ = sky("#f0a868", "#5a3a5e")
+    b = [s_, g("pulse", '<circle cx="1400" cy="520" r="130" fill="#ffd38a" opacity=".9"/>'),
+         '<circle cx="1400" cy="520" r="260" fill="#ffd38a" opacity=".12"/>', clouds(3, 121, 60, 300, .35)]
     r = random.Random(50)
-    for col, base in (("#3b2f4a", 640), ("#24352a", 760), ("#182419", 900)):
+    layers = (("#4a3a5a", "#5c4a6c", 600, 160, 230, .9), ("#2e4636", "#3d5c45", 720, 210, 300, 1),
+              ("#1b2c1e", "#28402b", 860, 260, 380, 1))
+    for k, (dark, light, base, hmin, hmax, op) in enumerate(layers):
         trees = []
-        for i in range(30):
-            x = i * 70 + r.uniform(-20, 20)
-            h = r.uniform(140, 300)
-            trees.append(g("treesway", f'<path d="M{x - 60:.0f},{base} L{x:.0f},{base - h:.0f} L{x + 60:.0f},{base}Z" fill="{col}"/>', desync(3, 5)))
-        b.append("".join(trees))
-    b.append('<rect x="0" y="900" width="1920" height="180" fill="#121a12"/>')
-    b.append('<rect x="720" y="760" width="420" height="180" fill="#6b4a2a"/><path d="M690,770 L930,640 L1170,770Z" fill="#3a2414"/>'
-             '<rect x="1040" y="660" width="40" height="70" fill="#4a3020"/>'
-             + g("winflicker", '<rect x="780" y="810" width="70" height="60" fill="#ffd98a"/>', desync(2, 4))
-             + g("winflicker", '<rect x="1010" y="810" width="70" height="60" fill="#ffd98a"/>', desync(2, 4))
-             + '<rect x="900" y="830" width="60" height="110" fill="#3a2414"/>')
-    b.append(g("smoke", "".join(g("steam bigsteam", f'<circle cx="1060" cy="650" r="{14 + i * 4}" fill="#ccc" opacity=".5"/>', f"animation-delay:-{i * .7:.1f}s") for i in range(4))))
+        x = -60
+        while x < W + 60:
+            h = r.uniform(hmin, hmax)
+            if not (k == 2 and 560 < x < 1320):  # keep the cabin clear
+                trees.append(pine(x, base + r.uniform(-10, 10), h, dark, light))
+            x += h * r.uniform(.28, .4)
+        b.append(f'<g opacity="{op}">{"".join(trees)}</g>')
+        b.append(f'<rect x="0" y="{base - 40}" width="1920" height="120" fill="#f0c9a0" opacity="{.10 - k * .03:.2f}"/>')
+        if k == 1:
+            # Cabin sits between the middle and front rows.
+            b.append('<rect x="720" y="760" width="440" height="190" fill="#7a5233"/>'
+                     + "".join(f'<rect x="720" y="{760 + j * 24}" width="440" height="4" fill="#5e3e26"/>' for j in range(8))
+                     + '<path d="M680,775 L940,630 L1200,775Z" fill="#4a2c18"/><path d="M680,775 L940,630 L940,650 L705,780Z" fill="#5e3a22"/>'
+                     '<rect x="1050" y="640" width="44" height="90" fill="#5a4636"/>'
+                     + g("winflicker", '<rect x="770" y="805" width="80" height="66" fill="#ffd98a"/>', desync(2, 4))
+                     + g("winflicker", '<rect x="1030" y="805" width="80" height="66" fill="#ffd98a"/>', desync(2, 4))
+                     + '<rect x="808" y="805" width="5" height="66" fill="#5e3e26"/><rect x="1068" y="805" width="5" height="66" fill="#5e3e26"/>'
+                     '<rect x="905" y="830" width="70" height="120" fill="#3a2414"/><circle cx="960" cy="892" r="5" fill="#e0b95e"/>'
+                     + g("smoke", "".join(g("steam bigsteam", f'<circle cx="1072" cy="630" r="{14 + i * 4}" fill="#ddd" opacity=".5"/>',
+                                            f"animation-delay:-{i * .7:.1f}s") for i in range(4))))
+    b.append('<rect x="0" y="950" width="1920" height="130" fill="#121a12"/>')
     return svg("".join(b), d)
 
 

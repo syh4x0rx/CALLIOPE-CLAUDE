@@ -230,6 +230,8 @@ KEYFRAMES = """
 .gesture{transform-origin:20% 5%;animation:gesture 1.1s ease-in-out infinite alternate}
 @keyframes gesture{from{transform:rotate(-12deg)}to{transform:rotate(8deg)}}
 @keyframes talk{0%{opacity:1}50%{opacity:0}}
+.drip{animation:drip 1.6s ease-in infinite}
+@keyframes drip{0%,40%{transform:translateY(0);opacity:1}90%{transform:translateY(80px);opacity:1}100%{transform:translateY(80px);opacity:0}}
 .walkaway{transform-origin:50% 100%;animation:walkaway 9s linear both}
 @keyframes walkaway{from{transform:translateY(0) scale(1)}to{transform:translateY(-170px) scale(.55)}}
 """
