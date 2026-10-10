@@ -1,0 +1,143 @@
+# Format: "## Chapter title" starts a chapter. Each scene is "HEADLINE | narration".
+# Headline is the big on-screen text (use \n for a line break). Narration is read by the voice
+# and shown as the caption. A blank line between scenes inserts a paragraph pause.
+
+## Cold Open
+11:59 AM | At 11:59 on the morning of January 20th, you are a private citizen.
+12:00 PM | At noon, you are in charge of the most powerful military on Earth,
+Trillions | a budget of several trillion dollars,
+The briefcase | and a briefcase that never leaves your side.
+35 words | All it takes is thirty-five words.
+
+So you want to be\nPresident? | This is what it's actually like to be President of the United States.
+The days | Not the speeches. The days.
+The real job | What you eat, who follows you, what you're allowed to do, and what you'll never do again.
+
+## Chapter 1: Getting the Job
+The fine print | Let's start with getting the job. The Constitution asks for very little.
+Age 35+ | You have to be at least thirty-five years old.
+Natural-born citizen | You have to be a natural-born citizen.
+14 years | And you have to have lived in the country for fourteen years.
+That's it | That's the whole list. No degree, no exam, no experience required.
+
+The campaign | Winning is the hard part. Campaigns now run for about two years and cost billions of dollars.
+Handshakes | You'll shake hands in diner parking lots in Iowa,
+Fried food\non a stick | eat fried food on a stick at state fairs,
+Same speech,\nagain | and repeat the same speech so many times you start dreaming it.
+Election night | Then, on a Tuesday in November, about a hundred and fifty million strangers decide whether any of that worked.
+
+## Chapter 2: Day One
+You won | Say it did. Now comes inauguration day.
+The oath | You put your hand on a Bible, or any book you choose, and say the oath.
+"I do solemnly swear..." | "I do solemnly swear that I will faithfully execute the Office of President of the United States."
+35 words | Thirty-five words.
+Meanwhile... | While you're standing on the steps of the Capitol, a crew of movers races through the White House.
+5 hours | In about five hours, they carry out the last family's furniture and carry in yours.
+Home | By the time you come back from the parade, your toothbrush is waiting for you.
+
+132 rooms | And what a house. A hundred and thirty-two rooms.
+35 bathrooms | Thirty-five bathrooms.
+Bowling. Movies.\nTennis. | A bowling alley in the basement, a movie theater, a tennis court,
+The chef | and a chef who has cooked for presidents before you.
+
+The bill | One surprise, though. The food isn't free.
+State dinners: free | Official dinners are paid for by the government,
+Groceries: yours | but your family's groceries, your snacks, your toothpaste and your dry cleaning all show up on a bill at the end of every month.
+$400,000 | You do get paid. The salary is four hundred thousand dollars a year.
+300 million bosses | It sounds like a lot, until you remember you're running a country with more than three hundred million people in it.
+
+## Chapter 3: A Normal Day
+A normal day | So what does a normal day look like?
+Top secret | It starts early. Before breakfast, someone hands you the President's Daily Brief.
+The Daily Brief | It's a short, top-secret summary of everything the intelligence agencies think you need to know:
+Overnight | a missile test overnight, a coup in a country you've barely heard of, a hacker group poking at power plants.
+Dull... or not | Some mornings it's dull. Some mornings it changes the whole day.
+
+The commute | Then you walk to work. It's a short walk, through the colonnade, past the Rose Garden, into the Oval Office.
+The Resolute Desk | You sit behind the Resolute Desk, built from the timbers of a British ship that was trapped in Arctic ice.
+15 minutes\nat a time | From there, your day is cut into fifteen-minute pieces.
+Back to back | A meeting on the economy. A call with a prime minister. A photo with a Little League team.
+No breaks | A budget fight with Congress. Lunch, if you're lucky, at your desk.
+Not your calendar | Your schedule is planned weeks ahead, and somebody else holds it.
+
+## Chapter 4: Never Alone
+Never alone | And everywhere you go, a few people go with you.
+Secret Service | The Secret Service is always there. Agents stand outside your bedroom door at night.
+First in the room | They walk ahead of you into every room. They decide which doors you use and which windows you stand near.
+Code name | You'll get a code name.
+No driving | You won't be allowed to drive a car on a public road again, possibly for the rest of your life.
+
+The aide | One more person follows you everywhere: a military aide carrying a black leather bag.
+"The football" | People call it the football. Inside are the plans and the codes for a nuclear launch.
+Always nearby | It's in the next room when you sleep, on the plane when you fly, and at the back of the restaurant if you ever manage to go out to dinner.
+The heaviest bag | It's the heaviest thing you'll ever carry, and you never actually touch it.
+
+## Chapter 5: The Decisions
+The decisions | Now, the decisions.
+Only hard ones | Nobody tells you this part of the job. The easy problems never reach your desk.
+Already answered | If a question has an obvious answer, someone below you already answered it.
+Least bad | What lands in front of you are the ones where every option is bad, and you're picking the least bad.
+
+Yes or no? | Do you send troops, or don't you?
+Sign or veto | Do you sign a bill you half agree with, or veto it and start over?
+10 days | When Congress sends you a bill, you have ten days, not counting Sundays, to sign it or send it back.
+Two-thirds | If you veto it, they can still override you, but they need two-thirds of both houses to do it.
+
+The Situation Room | Some decisions happen in a windowless room in the basement of the West Wing called the Situation Room.
+Smaller than you think | It's smaller than you'd expect. The screens are big, the coffee is bad,
+Waiting on you | and the people around the table are waiting for you to say yes or no.
+Half the country | And whatever you decide, around half the country will think you got it wrong.
+Some days, more | Some days it'll be more than half.
+
+## Chapter 6: Letters and Turkeys
+Real life | So how do you stay connected to real life?
+The mail | One way is the mail. The White House gets thousands of letters a day.
+Ten a night | A team reads them, and each night a small stack lands on your desk. Barack Obama read ten of them every evening.
+Dear Mr. President | People write about lost jobs, sick kids, a son coming home from war.
+Thanks... and not | Some of them thank you. Plenty of them tell you, in detail, how badly you're doing.
+The honest part | Those letters are often the most honest part of the day.
+
+Traditions | Then there are the strange traditions. Every November, you pardon a turkey in the Rose Garden.
+First pitch | You throw the first pitch at baseball games and hope it reaches the plate.
+Egg roll | You host an Easter egg roll on the South Lawn for thousands of kids.
+The tree | You light the national Christmas tree.
+Expected | None of it is in the Constitution. All of it is expected.
+
+## Chapter 7: On the Road
+Air Force One | Travel is its own world. When you fly, the plane is called Air Force One.
+A flying office | It has an office, a medical room, a conference room and a bedroom.
+Marine One | Helicopters called Marine One carry you to and from the lawn,
+Shell game | usually flying in groups so nobody on the ground knows which one you're in.
+The motorcade | A trip to a single city can take hundreds of people, cargo planes full of armored cars, and a motorcade that shuts down highways for miles.
+
+Camp David | On weekends, if things are quiet, you might go to Camp David, a guarded retreat in the Maryland woods.
+Rarely quiet | Things are rarely quiet.
+
+## Chapter 8: The Price
+The price | And then there's what the job does to the person.
+Before / after | Look at photos of any president on their first day, and then on their last.
+Grey hair | The hair goes grey. The lines get deeper. You'll sleep less.
+Family | Your kids grow up with agents at their school. Your friends start to talk to you a little differently.
+On the record | Every word you say is recorded, replayed and picked apart. A joke at the wrong moment becomes a headline.
+
+The reward | But you also get moments almost no one else gets.
+Welcome home | You welcome soldiers home. You stand with a town the morning after a tornado.
+The pen | You sign a law that changes how millions of people live, and you hand the pen to someone who spent twenty years fighting for it.
+
+## Chapter 9: The Last Day
+It ends | Then, just like that, it ends.
+22nd Amendment | Since 1951, the Twenty-Second Amendment has limited presidents to two terms.
+4 years. Maybe 8. | Four years, maybe eight, and it's over.
+The letter | On your final morning, you leave a handwritten letter in the desk drawer for the next person.
+The door | You walk out the same door you came in. The movers are already waiting.
+
+After | After that, you'll get a pension, an office, and Secret Service protection for life.
+Still "President" | People will still call you Mr. or Madam President.
+The library | You'll write a book, build a library, and watch someone else make the calls you used to make.
+
+## Would You Want It?
+Would you? | So, would you want it?
+11:59 AM | Before you answer, remember the morning of January 20th. At 11:59, you could go anywhere, eat anything, and say whatever you wanted.
+12:00 PM | At noon, the whole country becomes your responsibility.
+The trade | Every president who's ever lived made that trade. Very few of them would tell you it was easy.
+No regrets | Almost none of them would tell you they regret it.
