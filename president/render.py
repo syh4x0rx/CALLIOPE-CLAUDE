@@ -265,8 +265,8 @@ def build_audio(segs, work, sf2):
             place("boom", s["start"] + .38, .55)
         elif s["kind"] == "outro":
             place("boom", s["start"] + .38, .6)
-        elif s["kind"] == "scene":
-            place("swish", s["start"] + .05, .18)
+        elif s["kind"] == "scene" and s["run"]["first"]:
+            place("swish", s["start"] + .02, .15)
         if not s["run"]["first"]:
             continue
         r0, r1 = s["run"]["start"], s["run"]["end"]

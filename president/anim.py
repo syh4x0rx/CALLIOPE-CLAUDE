@@ -235,22 +235,6 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#000}
 #punch,#cam{position:absolute;inset:0;transform-origin:50% 50%}
 #art svg{display:block}
 .card #art{filter:blur(9px) brightness(.42)}
-#shade{position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(to bottom,rgba(4,8,18,.55) 0,rgba(4,8,18,0) 220px,rgba(4,8,18,0) 760px,rgba(4,8,18,.82) 1080px)}
-#label{position:absolute;left:84px;top:54px;font:800 26px Montserrat;letter-spacing:4px;color:#e0b95e;text-transform:uppercase;
-  text-shadow:0 2px 6px rgba(0,0,0,.6);animation:fadein .5s both}
-#head{position:absolute;left:78px;top:96px;transform-origin:0% 50%;animation:headpop .55s cubic-bezier(.34,1.56,.64,1) both;animation-delay:.08s}
-#head span{display:inline-block;font:400 78px/1.02 Anton;letter-spacing:1px;text-transform:uppercase;color:#fff;
-  background:rgba(8,14,30,.86);padding:12px 26px 14px;border-left:10px solid #e0b95e;white-space:pre;
-  box-shadow:0 10px 30px rgba(0,0,0,.35)}
-#head span.gold{color:#ffd45a}
-@keyframes headpop{from{transform:scale(.6) translateX(-60px);opacity:0}to{transform:scale(1) translateX(0);opacity:1}}
-#cap{position:absolute;left:160px;right:160px;bottom:62px;text-align:center;font:800 46px/1.28 Montserrat;color:#fff;
-  -webkit-text-stroke:2px rgba(0,0,0,.55);paint-order:stroke fill;text-shadow:0 4px 14px rgba(0,0,0,.75)}
-#cap .w{display:inline-block;opacity:.35;transform:translateY(6px);animation:wordon .18s ease-out both}
-#cap .w.key{color:#ffd45a}
-@keyframes wordon{to{opacity:1;transform:translateY(0)}}
-#bar{position:absolute;left:0;bottom:0;height:8px;background:#e0b95e}
 #cardtitle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 #cardtitle .small{font:800 40px Montserrat;letter-spacing:10px;color:#e0b95e;animation:fadein .5s both;animation-delay:.2s}
 #cardtitle .big{font:400 150px/1.05 Anton;text-transform:uppercase;color:#fff;margin-top:14px;
@@ -259,42 +243,22 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#000}
 @keyframes slamt{from{transform:scale(1.8);opacity:0;letter-spacing:30px}to{transform:scale(1);opacity:1;letter-spacing:2px}}
 @keyframes growx2{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 #fade{position:absolute;inset:0;background:#000;opacity:0}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 55%,rgba(0,0,0,.38) 100%)}
 """
-
-KEYWORDS = {"never", "free", "noon", "president", "nuclear", "top-secret", "secret", "trillion", "billions",
-            "thirty-five", "fourteen", "ten", "two-thirds", "half", "life", "football", "veto", "worse", "bad",
-            "regret", "easy", "trade", "turkey", "air", "force", "one", "camp", "david", "400,000", "five",
-            "hundred", "thirty-two", "situation", "room", "eight", "four", "twenty-second"}
-
-
-def caption_html(text, voice_at, dur):
-    words = text.split()
-    total = sum(len(w) + 1 for w in words)
-    acc, spans = 0, []
-    for w in words:
-        t = voice_at + dur * acc / total
-        acc += len(w) + 1
-        bare = w.strip(".,:;!?\"'").lower()
-        cls = "w key" if bare in KEYWORDS or any(ch.isdigit() for ch in bare) else "w"
-        spans.append(f'<span class="{cls}" style="animation-delay:{t:.2f}s">{html.escape(w)}</span>')
-    return " ".join(spans)
-
 
 def page(seg, art_svg, total, cam):
     """cam: dict with run_dur, zoom_in (bool), pan (+1/-1), first (bool)."""
     css = PAGE_CSS.replace("{FONTS}", FONTS)
     d = cam["run_dur"]
-    z0, z1 = (1.0, 1.1) if cam["zoom_in"] else (1.1, 1.0)
-    px = 34 * cam["pan"]
+    # Never below 1.06x so the 30px pan can't expose the frame edge.
+    z0, z1 = (1.06, 1.14) if cam["zoom_in"] else (1.14, 1.06)
+    px = 30 * cam["pan"]
     cam_kf = (f"@keyframes cam{{from{{transform:scale({z0}) translateX({-px}px)}}"
               f"to{{transform:scale({z1}) translateX({px}px)}}}}"
               f"#cam{{animation:cam {d:.2f}s linear both}}")
     punch = ("#punch{animation:punchin .45s cubic-bezier(.2,.8,.3,1) both}"
              "@keyframes punchin{from{transform:scale(1.07)}to{transform:scale(1)}}") if cam["first"] else ""
     seg_dur = seg["end"] - seg["start"]
-    p0, p1 = seg["start"] / total * 100, seg["end"] / total * 100
-    bar = (f"#bar{{animation:barw {seg_dur:.2f}s linear both}}"
-           f"@keyframes barw{{from{{width:{p0:.3f}%}}to{{width:{p1:.3f}%}}}}")
     fades = ""
     if seg["kind"] == "outro":
         fades = f"#fade{{animation:fadeout 2s linear both;animation-delay:{seg_dur - 2.2:.2f}s}}@keyframes fadeout{{to{{opacity:1}}}}"
@@ -302,22 +266,16 @@ def page(seg, art_svg, total, cam):
         fades = "#fade{opacity:1;animation:fadeinb .8s linear both}@keyframes fadeinb{to{opacity:0}}"
 
     body = [f'<div id="stage" class="{seg["kind"]}"><div id="punch"><div id="cam"><div id="art">{art_svg}</div></div></div>']
-    if seg["kind"] == "scene":
-        head = seg["head"].upper()
-        gold = "gold" if any(c.isdigit() for c in head) or "$" in head else ""
-        voice_local = seg["voice_at"] - seg["start"]
-        body.append('<div id="shade"></div>')
-        body.append(f'<div id="label">{html.escape(seg["chapter"])}</div>')
-        body.append(f'<div id="head"><span class="{gold}">{html.escape(head)}</span></div>')
-        body.append(f'<div id="cap">{caption_html(seg["vo"], voice_local, seg["vo_dur"])}</div>')
-    elif seg["kind"] == "card":
+    # Scenes are full-frame art with no on-screen text.
+    body.append('<div id="vignette"></div>')
+    if seg["kind"] == "card":
         title = seg["title"]
         small, big = ([s.strip() for s in title.split(":", 1)] if ":" in title else ("", title))
         body.append(f'<div id="cardtitle"><div class="small">{html.escape(small.upper())}</div>'
                     f'<div class="big">{html.escape(big)}</div><div class="rule"></div></div>')
-    else:
+    elif seg["kind"] == "outro":
         body.append('<div id="cardtitle"><div class="small">WHAT IT\'S LIKE TO BE PRESIDENT</div>'
                     '<div class="big">Would you<br>take the job?</div><div class="rule"></div></div>')
-    body.append('<div id="bar"></div><div id="fade"></div></div>')
-    return (f"<!doctype html><html><head><meta charset='utf-8'><style>{css}{FILL_BOX}{KEYFRAMES}{cam_kf}{punch}{bar}{fades}"
+    body.append('<div id="fade"></div></div>')
+    return (f"<!doctype html><html><head><meta charset='utf-8'><style>{css}{FILL_BOX}{KEYFRAMES}{cam_kf}{punch}{fades}"
             f"</style></head><body>{''.join(body)}</body></html>")

@@ -132,8 +132,6 @@ def flag(x, y, w, h, wave=0.0, pole=True):
     for r_ in range(4):
         for c in range(5):
             cloth.append(star_shape(x + w * .4 * (c + .5) / 5, y + sh * 7 * (r_ + .5) / 4, sh * .45, WHITE))
-    # Shading band that sweeps across the cloth sells the ripple.
-    cloth.append(g("ripple", f'<rect x="{x}" y="{y}" width="{w * .25}" height="{h}" fill="#000" opacity=".12"/>'))
     out.append(g("flagwave", "".join(cloth), desync(1.2, 1.8)))
     return "".join(out)
 
@@ -351,7 +349,7 @@ def a_briefcase():
 
 def a_money():
     d, s = sky("#173d2b", "#06140d")
-    b = [s, rays(1650, 230, 12, "#e0b95e", .05)]
+    b = [s, rays(1650, 330, 12, "#e0b95e", .05)]
     r = random.Random(4)
     for stack in range(9):
         x = 260 + stack * 160 + r.uniform(-20, 20)
@@ -362,8 +360,8 @@ def a_money():
             st.append(f'<rect x="{x}" y="{y}" width="220" height="30" rx="4" fill="#8fbf8a" stroke="#2e5a33" stroke-width="3"/>'
                       f'<rect x="{x + 95}" y="{y}" width="30" height="30" fill="#e6d9a8"/>')
         b.append(g("grow-y", "".join(st), delay(.1 + stack * .12)))
-    b.append(g("coinflip", f'<circle cx="1650" cy="230" r="140" fill="{GOLD}" opacity=".95"/>'
-             f'<text x="1650" y="290" text-anchor="middle" font-family="serif" font-size="180" font-weight="bold" fill="#5b4310">$</text>'))
+    b.append(g("coinflip", f'<circle cx="1650" cy="330" r="130" fill="{GOLD}" opacity=".95"/>'
+             f'<text x="1650" y="388" text-anchor="middle" font-family="serif" font-size="180" font-weight="bold" fill="#5b4310">$</text>'))
     return svg("".join(b), d)
 
 
@@ -427,10 +425,13 @@ def a_statefair():
         for k in range(0, 360, 72):
             tent.append(f'<path d="M{x + k},620 L{x + 180},500 L{x + k + 36},620Z" fill="{RED}"/>')
         b.append("".join(tent))
-    b.append(g("bounce", '<path d="M760,1080 L860,700 L900,712 L820,1080Z" fill="#e8c890"/>'
-             '<rect x="770" y="420" width="120" height="320" rx="60" fill="#c27a2c" transform="rotate(15 830 580)"/>'
-             '<path d="M800,450 Q830,520 800,600" stroke="#e8b830" stroke-width="12" fill="none" transform="rotate(15 830 580)"/>'
-             f'<path d="M700,1080 Q720,820 830,800 Q920,820 930,1080Z" fill="{SKIN[0]}"/>'))
+    r = random.Random(77)
+    for i in range(9):
+        x, y = r.uniform(120, 1000), r.uniform(320, 640)
+        col = r.choice([RED, GOLD, "#3f6fd8", "#e75a7c", WHITE])
+        b.append(g("float", f'<path d="M{x:.0f},{y + 60:.0f} q-12,60 6,130" stroke="#ddd" stroke-width="3" fill="none"/>'
+                            f'<ellipse cx="{x:.0f}" cy="{y:.0f}" rx="46" ry="58" fill="{col}"/>'
+                            f'<ellipse cx="{x - 14:.0f}" cy="{y - 20:.0f}" rx="10" ry="16" fill="#fff" opacity=".45"/>', desync(2, 3.5)))
     return svg("".join(b), d)
 
 
@@ -440,11 +441,8 @@ def a_speech():
     for i in range(5):
         x = 260 + i * 350
         b.append(g("searchlight", f'<path d="M{x},0 L{x + 140},0 L{x + 260},1080 L{x - 120},1080Z" fill="#fff" opacity=".05"/>', desync(3, 5)))
-    for k, op in ((2, .12), (1, .25)):
-        for sgn in (1, -1):
-            b.append(g("ghost", f'<g opacity="{op}" transform="translate({sgn * k * 360},0)">{person(960, 900, 1.4, skin=SKIN[2], motion="")}</g>',
-                       f"animation-delay:-{k * .4:.1f}s"))
-    b.append(person(960, 900, 1.4, skin=SKIN[2], arm_up=True))
+    b.append(crowd(1080, 26, 23, "#05080f", 1.5, cheer=True))
+    b.append(person(960, 900, 1.4, skin=SKIN[2]))
     b.append(f'<path d="M790,700 L1130,700 L1090,1000 L830,1000Z" fill="#3a2516"/>'
              f'<circle cx="960" cy="820" r="70" fill="{GOLD}" opacity=".8"/>{star_shape(960, 820, 48, NAVY)}')
     for i in range(3):
@@ -680,7 +678,7 @@ def a_colonnade():
     return svg("".join(b), d)
 
 
-def oval_office(desk=True, extra=""):
+def oval_office(desk=True, extra="", behind=""):
     d = grad("wall", "#efe4c6", "#d9c9a2") + radial("rug", "#2e4f8a", "#1a2f57", .5, .5, .6)
     b = [f'<rect width="{W}" height="{H}" fill="url(#wall)"/>']
     for x in (300, 1500):
@@ -695,6 +693,7 @@ def oval_office(desk=True, extra=""):
     b.append(flag(600, 220, 120, 260, wave=4) + flag(1240, 220, 120, 260, wave=4))
     b.append('<ellipse cx="960" cy="980" rx="1100" ry="260" fill="url(#rug)"/>'
              f'<ellipse cx="960" cy="980" rx="320" ry="90" fill="none" stroke="{GOLD}" stroke-width="6"/>')
+    b.append(behind)
     if desk:
         b.append('<rect x="560" y="600" width="800" height="330" fill="#5a3418"/>'
                  '<rect x="540" y="580" width="840" height="40" fill="#6d4020"/>'
@@ -750,8 +749,8 @@ def a_phone_call():
     extra = (g("ring", f'<path d="M1240,520 Q1260,470 1300,470 L1380,470 Q1420,470 1430,520 L1400,540 L1270,540Z" fill="{NAVY}"/>'
                        f'<rect x="1270" y="530" width="140" height="50" rx="10" fill="{NAVY}"/>')
              + g("ringwaves", '<path d="M1450,470 q30,30 0,60 M1480,450 q45,50 0,100" stroke="#e33" stroke-width="6" fill="none"/>')
-             + person(960, 590, .7, skin=SKIN[3]))
-    return oval_office(extra=extra)
+)
+    return oval_office(extra=extra, behind=person(960, 760, .75, skin=SKIN[3]))
 
 
 def a_little_league():
@@ -1140,21 +1139,32 @@ def a_portrait_aging():
 
 
 def a_press():
-    d, s = sky("#141a26", "#06080d")
-    b = [s]
+    d = grad("pr", "#1c2a4a", "#0a1020")
+    b = [f'<rect width="{W}" height="{H}" fill="url(#pr)"/>',
+         '<rect x="0" y="0" width="1920" height="620" fill="#22355e"/>',
+         '<rect x="560" y="120" width="800" height="380" rx="12" fill="#2c4476"/>',
+         f'<circle cx="960" cy="300" r="130" fill="none" stroke="{GOLD}" stroke-width="10"/>',
+         star_shape(960, 300, 70, GOLD),
+         '<rect x="0" y="600" width="1920" height="40" fill="#162441"/>']
+    b.append(flag(300, 180, 160, 300, wave=5) + flag(1500, 180, 160, 300, wave=5))
+    b.append(person(960, 900, 1.05, skin=SKIN[1]))
+    b.append(f'<path d="M800,640 L1120,640 L1090,980 L830,980Z" fill="#3a2516"/><rect x="790" y="625" width="340" height="24" rx="6" fill="#4a3020"/>')
+    b.append(f'<circle cx="960" cy="790" r="64" fill="{GOLD}" opacity=".9"/>{star_shape(960, 790, 42, NAVY)}')
+    for i in range(3):
+        b.append(f'<rect x="{935 + i * 22}" y="575" width="8" height="55" fill="#222"/><ellipse cx="{939 + i * 22}" cy="570" rx="10" ry="14" fill="#111"/>')
     r = random.Random(60)
-    for i in range(22):
-        x, y = r.uniform(0, W), r.uniform(60, 600)
-        b.append(g("flash", f'<circle cx="{x:.0f}" cy="{y:.0f}" r="{r.uniform(40, 110):.0f}" fill="#fff"/>', f"animation-delay:-{r.uniform(0, 3):.2f}s;animation-duration:{r.uniform(1.2, 3):.2f}s"))
-    b.append(f'<path d="M760,600 L1160,600 L1120,1080 L800,1080Z" fill="#3a2516"/>{star_shape(960, 760, 60, GOLD)}')
-    for i in range(12):
-        a = -math.pi * (i + 1) / 13
-        x2, y2 = 960 + 520 * math.cos(a), 600 + 420 * math.sin(a) * -1
-        b.append(f'<line x1="{x2:.0f}" y1="{y2 + 300:.0f}" x2="{960 + (i - 6) * 14}" y2="590" stroke="#333" stroke-width="10"/>'
-                 f'<rect x="{x2 - 28:.0f}" y="{y2 + 280:.0f}" width="56" height="40" rx="8" fill="{r.choice([RED, "#3f6fd8", "#555", GOLD])}"/>')
-    for i in range(8):
-        x = 80 + i * 240
-        b.append(g("bob", f'<rect x="{x}" y="900" width="160" height="110" rx="14" fill="#222"/><circle cx="{x + 80}" cy="955" r="38" fill="#333" stroke="#555" stroke-width="8"/>', desync(1, 2)))
+    reporters = []
+    for i in range(14):
+        x = 70 + i * 135 + r.uniform(-15, 15)
+        body = (f'<circle cx="{x:.0f}" cy="985" r="40" fill="#0b111d"/>'
+                f'<path d="M{x - 70:.0f},1090 Q{x - 70:.0f},1020 {x:.0f},1018 Q{x + 70:.0f},1020 {x + 70:.0f},1090Z" fill="#0b111d"/>')
+        if i % 3 == 1:
+            body += (f'<rect x="{x + 20:.0f}" y="930" width="70" height="46" rx="8" fill="#151515"/>'
+                     f'<circle cx="{x + 55:.0f}" cy="953" r="15" fill="#333"/>'
+                     + g("flash", f'<circle cx="{x + 30:.0f}" cy="938" r="60" fill="#fff"/>',
+                         f"animation-delay:-{r.uniform(0, 3):.2f}s;animation-duration:{r.uniform(1.6, 3):.2f}s"))
+        reporters.append(g("bob", body, desync(1.5, 2.5)))
+    b.append("".join(reporters))
     return svg("".join(b), d)
 
 
@@ -1238,8 +1248,6 @@ def a_library():
     for x in range(470, 1460, 100):
         b.append(f'<rect x="{x}" y="520" width="40" height="300" fill="#fbf6ea"/>')
     b.append(flag(1560, 300, 160, 100, wave=6))
-    for k, (col, dy) in enumerate((("#7a3030", 0), ("#1f3d6e", -70), (GOLD, -140))):
-        b.append(g("dropin", f'<g transform="translate(240,880) rotate(-6)"><rect x="{10 if k == 2 else 0}" y="{dy}" width="{280 if k == 2 else 300}" height="70" fill="{col}"/></g>', delay(.2 + k * .3)))
     return svg("".join(b), d)
 
 
