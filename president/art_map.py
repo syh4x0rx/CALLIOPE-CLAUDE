@@ -46,3 +46,31 @@ ART_FOR = {
 }
 # Second appearances of a headline (the closing 11:59 / 12:00 beats) use these instead.
 REPEAT = {"11:59 AM": "choice", "12:00 PM": "white_house_day"}
+
+# Lines spoken on screen by characters, keyed by scene headline. Each line:
+# (who, text, kokoro voice, bubble anchor x, anchor y, speed). `who` matches
+# person(who=...) in art.py so the mouth moves; None means bubble only.
+DIALOGUE = {
+    "The campaign": [("pres", "Thank you, Iowa!", "am_michael", 960, 225, 1.0)],
+    "Same speech,\nagain": [("pres", "And that is why... I'm running!", "am_michael", 960, 225, 1.0)],
+    "You won": [("pres", "We actually did it!", "am_michael", 960, 225, 1.0)],
+    "Meanwhile...": [("mover", "Where does the couch go?!", "am_echo", 560, 715, 1.05)],
+    "The chef": [("chef", "Dinner is served, Mr. President.", "am_adam", 1380, 395, 1.0)],
+    "Back to back": [("pres", "Prime Minister! Great to hear from you.", "am_michael", 960, 395, 1.05)],
+    "Secret Service": [("agent", "Sir. Not that door.", "am_onyx", 560, 540, .95)],
+    "First in the room": [("agent", "Room is clear.", "am_onyx", 960, 440, .95)],
+    "Code name": [("agent", "Eagle is on the move.", "am_onyx", 960, 440, .95)],
+    "No driving": [(None, "Can I just drive to the store?", "am_michael", 980, 420, 1.0),
+                   (None, "No.", "am_onyx", 1560, 560, .9)],
+    "The aide": [("aide", "Where you go, I go, sir.", "am_liam", 700, 380, 1.0)],
+    "Waiting on you": [(None, "We need a decision, sir.", "am_fenrir", 960, 470, .95)],
+    "Half the country": [(None, "Great call!", "af_sarah", 470, 330, 1.05),
+                         (None, "Terrible call!", "am_adam", 1450, 330, 1.05)],
+    "Traditions": [(None, "Gobble?", "am_puck", 1000, 370, .9),
+                   ("pres", "You're pardoned.", "am_michael", 1480, 495, 1.0)],
+    "First pitch": [("pres", "Here goes nothing.", "am_michael", 960, 440, 1.0)],
+    "Egg roll": [(None, "I found one!", "af_sky", 820, 870, 1.15)],
+    "On the record": [(None, "Mr. President! One question!", "af_bella", 640, 900, 1.05)],
+    "Welcome home": [("soldier", "Good to be home, sir!", "am_eric", 700, 585, 1.0)],
+    "The door": [(None, "Goodbye, old house.", "am_michael", 960, 470, .95)],
+}

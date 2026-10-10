@@ -136,41 +136,109 @@ def flag(x, y, w, h, wave=0.0, pole=True):
     return "".join(out)
 
 
+def _shade(hex_color, f):
+    """Darken (f<1) or lighten (f>1) a #rrggbb colour."""
+    h = hex_color.lstrip("#")
+    if len(h) != 6:
+        return hex_color
+    c = [int(h[i:i + 2], 16) for i in (0, 2, 4)]
+    c = [max(0, min(255, int(v * f if f < 1 else v + (255 - v) * (f - 1)))) for v in c]
+    return "#%02x%02x%02x" % tuple(c)
+
+
+HAIR_STYLES = {
+    "side": '<path d="M-48,-408 Q-52,-468 -4,-466 Q44,-470 50,-412 Q46,-440 18,-446 Q-10,-436 -30,-446 Q-44,-432 -48,-408Z" fill="{h}"/>'
+            '<path d="M-30,-446 Q-6,-458 24,-450" stroke="{hl}" stroke-width="5" fill="none" opacity=".5"/>',
+    "short": '<path d="M-48,-404 Q-50,-470 0,-468 Q50,-470 48,-404 Q40,-440 0,-444 Q-40,-440 -48,-404Z" fill="{h}"/>',
+    "bald": '<path d="M-48,-392 Q-50,-420 -40,-430 L-38,-396Z M48,-392 Q50,-420 40,-430 L38,-396Z" fill="{h}"/>',
+    "long": '<path d="M-54,-300 Q-64,-470 0,-470 Q64,-470 54,-300 L34,-300 Q40,-400 30,-430 Q0,-410 -30,-430 Q-40,-400 -34,-300Z" fill="{h}"/>',
+    "bun": '<circle cx="0" cy="-470" r="22" fill="{h}"/><path d="M-48,-404 Q-50,-468 0,-466 Q50,-468 48,-404 Q40,-436 0,-440 Q-40,-436 -48,-404Z" fill="{h}"/>',
+    "cap": '<path d="M-50,-412 Q-50,-470 0,-470 Q50,-470 50,-412Z" fill="{h}"/><path d="M-50,-414 L-74,-406 L50,-414Z" fill="{hl}"/>',
+}
+
+
 def person(x, y, s=1.0, suit=SUIT, skin=SKIN[0], tie=RED, shades=False, earpiece=False,
-           hair="#2a1d14", arm_up=False, wave_arm=True, motion="bob"):
-    """Standing figure, feet at (x, y), height ~ 420*s, with idle motion and blinks."""
-    p = [f'<g transform="translate({x},{y}) scale({s})">']
-    p.append('<ellipse cx="0" cy="0" rx="70" ry="12" fill="#000" opacity=".25"/>')
-    p.append(f'<rect x="-38" y="-190" width="34" height="190" rx="10" fill="{suit}"/>')
-    p.append(f'<rect x="4" y="-190" width="34" height="190" rx="10" fill="{suit}"/>')
-    p.append(f'<path d="M-62,-330 Q-66,-180 -48,-175 L48,-175 Q66,-180 62,-330 Q0,-352 -62,-330Z" fill="{suit}"/>')
-    p.append(f'<path d="M-16,-336 L0,-300 L16,-336Z" fill="{WHITE}"/>')
-    p.append(f'<path d="M-5,-318 L5,-318 L9,-250 L0,-238 L-9,-250Z" fill="{tie}"/>')
+           hair="#2a1d14", arm_up=False, wave_arm=True, motion="bob", who=None, hair_style="side",
+           shirt=WHITE, hat=None, gesture=False, pants=None):
+    """Standing cartoon figure, feet at (x, y), ~480*s tall.
+
+    Idle motion, breathing, blinks and head tilt are always on. `who` names the
+    figure so a talking animation can target its mouth (.mouthopen) and arm.
+    """
+    pants = pants or _shade(suit, .85)
+    dark, light = _shade(suit, .72), _shade(suit, 1.18)
+    skin_d = _shade(skin, .84)
+    p = [f'<g transform="translate({x},{y}) scale({s})">',
+         '<ellipse cx="0" cy="2" rx="86" ry="15" fill="#000" opacity=".22"/>']
+    # Legs and shoes.
+    p.append(f'<path d="M-40,-200 L-38,-22 Q-38,-12 -26,-12 L-10,-12 Q-4,-12 -4,-22 L-2,-200Z" fill="{pants}"/>'
+             f'<path d="M2,-200 L4,-22 Q4,-12 12,-12 L26,-12 Q38,-12 38,-22 L40,-200Z" fill="{_shade(pants, .85)}"/>'
+             '<path d="M-44,-4 Q-46,-26 -22,-26 L-4,-26 Q2,-26 2,-14 L2,-4Z" fill="#14161b"/>'
+             '<path d="M-2,-4 L-2,-14 Q-2,-26 6,-26 L24,-26 Q48,-26 46,-4Z" fill="#14161b"/>')
+    upper = []
+    # Back arm (left) behind the torso.
+    upper.append(f'<path d="M-60,-326 Q-82,-268 -76,-206" stroke="{dark}" stroke-width="30" fill="none" stroke-linecap="round"/>'
+                 f'<circle cx="-76" cy="-194" r="16" fill="{skin_d}"/>')
+    # Torso: jacket with shading, shirt, lapels, tie, buttons.
+    upper.append(f'<path d="M-70,-330 Q-76,-250 -62,-172 L62,-172 Q76,-250 70,-330 Q36,-352 0,-352 Q-36,-352 -70,-330Z" fill="{suit}"/>'
+                 f'<path d="M14,-350 Q40,-348 70,-330 Q76,-250 62,-172 L14,-172Z" fill="{dark}" opacity=".55"/>'
+                 f'<path d="M-20,-350 L0,-292 L20,-350Z" fill="{shirt}"/>'
+                 f'<path d="M-24,-350 L-4,-286 L-16,-250 L-34,-338Z" fill="{light}" opacity=".6"/>'
+                 f'<path d="M24,-350 L4,-286 L16,-250 L34,-338Z" fill="{dark}" opacity=".6"/>')
+    if tie:
+        upper.append(f'<path d="M-7,-336 L7,-336 L10,-322 L0,-316 L-10,-322Z" fill="{_shade(tie, .8)}"/>'
+                     f'<path d="M-6,-318 L6,-318 L12,-246 L0,-232 L-12,-246Z" fill="{tie}"/>')
+    upper.append(f'<circle cx="0" cy="-214" r="4" fill="{dark}"/><circle cx="0" cy="-194" r="4" fill="{dark}"/>')
+    # Front arm (right): waving, gesturing or relaxed.
     if arm_up:
-        arm = (f'<path d="M50,-325 Q95,-380 110,-450" stroke="{suit}" stroke-width="30" fill="none" stroke-linecap="round"/>'
-               f'<circle cx="112" cy="-462" r="16" fill="{skin}"/>')
-        p.append(g("wavearm", arm, desync(.45, .6)) if wave_arm else arm)
+        arm = (f'<path d="M58,-324 Q100,-380 114,-452" stroke="{suit}" stroke-width="30" fill="none" stroke-linecap="round"/>'
+               f'<rect x="102" y="-462" width="26" height="10" rx="4" fill="{shirt}" transform="rotate(-20 115 -457)"/>'
+               f'<ellipse cx="118" cy="-474" rx="16" ry="19" fill="{skin}"/>')
+        upper.append(g("wavearm", arm, desync(.45, .6)) if wave_arm else arm)
     else:
-        p.append(f'<path d="M58,-320 Q78,-250 70,-190" stroke="{suit}" stroke-width="28" fill="none" stroke-linecap="round"/>'
-                 f'<circle cx="70" cy="-180" r="14" fill="{skin}"/>')
-    p.append(f'<path d="M-58,-320 Q-78,-250 -70,-190" stroke="{suit}" stroke-width="28" fill="none" stroke-linecap="round"/>'
-             f'<circle cx="-70" cy="-180" r="14" fill="{skin}"/>')
-    head = [f'<rect x="-12" y="-358" width="24" height="26" fill="{skin}"/>',
-            f'<ellipse cx="0" cy="-392" rx="38" ry="44" fill="{skin}"/>',
-            f'<path d="M-40,-395 Q-42,-445 0,-442 Q42,-445 40,-395 Q34,-420 0,-420 Q-30,-420 -40,-395Z" fill="{hair}"/>']
+        arm = (f'<path d="M62,-326 Q84,-266 78,-206" stroke="{suit}" stroke-width="30" fill="none" stroke-linecap="round"/>'
+               f'<circle cx="78" cy="-194" r="16" fill="{skin}"/>')
+        cls = "gesture" if gesture else "armidle"
+        upper.append(g(cls, arm, desync(2.5, 3.5)))
+    # Head.
+    head = [f'<path d="M-14,-366 L-14,-344 Q0,-336 14,-344 L14,-366Z" fill="{skin_d}"/>']
+    if hair_style == "long":
+        head.append(HAIR_STYLES["long"].format(h=hair, hl=_shade(hair, 1.4)))
+    head.append(f'<circle cx="-47" cy="-402" r="11" fill="{skin_d}"/><circle cx="47" cy="-402" r="11" fill="{skin_d}"/>'
+                f'<ellipse cx="0" cy="-405" rx="47" ry="53" fill="{skin}"/>'
+                f'<path d="M20,-452 Q47,-430 46,-400 Q44,-372 22,-356 Q40,-390 20,-452Z" fill="{skin_d}" opacity=".45"/>')
+    if hair_style != "long":
+        head.append(HAIR_STYLES.get(hair_style, HAIR_STYLES["side"]).format(h=hair, hl=_shade(hair, 1.4)))
+    else:
+        head.append(f'<path d="M-46,-410 Q-40,-466 0,-462 Q40,-466 46,-410 Q30,-438 0,-440 Q-30,-438 -46,-410Z" fill="{hair}"/>')
+    head.append(f'<path d="M-28,-428 Q-18,-434 -8,-428" stroke="{_shade(hair, .8)}" stroke-width="5" fill="none" stroke-linecap="round"/>'
+                f'<path d="M8,-428 Q18,-434 28,-428" stroke="{_shade(hair, .8)}" stroke-width="5" fill="none" stroke-linecap="round"/>')
     if shades:
-        head.append('<rect x="-32" y="-402" width="28" height="14" rx="5" fill="#0a0a0a"/>'
-                    '<rect x="4" y="-402" width="28" height="14" rx="5" fill="#0a0a0a"/>'
-                    '<rect x="-6" y="-398" width="12" height="4" fill="#0a0a0a"/>')
+        head.append('<path d="M-36,-414 L-4,-414 L-6,-396 Q-20,-390 -34,-398Z M4,-414 L36,-414 L34,-398 Q20,-390 6,-396Z" fill="#0a0a0a"/>'
+                    '<rect x="-6" y="-412" width="12" height="4" fill="#0a0a0a"/>'
+                    '<path d="M-30,-410 L-22,-410" stroke="#fff" stroke-width="3" opacity=".5"/>')
     else:
-        head.append(g("blink", '<circle cx="-13" cy="-394" r="4" fill="#222"/><circle cx="13" cy="-394" r="4" fill="#222"/>',
-                      f"animation-delay:-{_rng.uniform(0, 4):.1f}s;animation-duration:{_rng.uniform(3.5, 5.5):.1f}s")
-                    + '<path d="M-12,-372 Q0,-364 12,-372" stroke="#7a4a34" stroke-width="3" fill="none"/>')
+        eyes = ('<ellipse cx="-18" cy="-406" rx="6" ry="7.5" fill="#1d1d24"/><ellipse cx="18" cy="-406" rx="6" ry="7.5" fill="#1d1d24"/>'
+                '<circle cx="-16" cy="-409" r="2.2" fill="#fff"/><circle cx="20" cy="-409" r="2.2" fill="#fff"/>')
+        head.append(g("blink", eyes, f"animation-delay:-{_rng.uniform(0, 4):.1f}s;animation-duration:{_rng.uniform(3.5, 5.5):.1f}s"))
+    head.append(f'<path d="M-3,-398 Q4,-386 -4,-382" stroke="{skin_d}" stroke-width="4" fill="none" stroke-linecap="round"/>'
+                '<circle cx="-30" cy="-384" r="9" fill="#e86a6a" opacity=".18"/><circle cx="30" cy="-384" r="9" fill="#e86a6a" opacity=".18"/>')
+    head.append('<path d="M-13,-372 Q0,-362 13,-372" stroke="#7a3b2e" stroke-width="4" fill="none" stroke-linecap="round" class="mouthclosed"/>'
+                '<g class="mouthopen" style="opacity:0"><ellipse cx="0" cy="-369" rx="12" ry="9" fill="#5a1f1f"/>'
+                '<ellipse cx="0" cy="-364" rx="7" ry="4" fill="#d9666b"/><rect x="-8" y="-377" width="16" height="4" rx="2" fill="#fff"/></g>')
     if earpiece:
-        head.append('<path d="M38,-392 Q52,-370 40,-340 L30,-300" stroke="#e8e8e8" stroke-width="3" fill="none"/>')
-    p.append(g("headtilt", "".join(head), desync(2.5, 4)))
+        head.append('<path d="M46,-398 Q60,-372 46,-344 L36,-306" stroke="#e8e8e8" stroke-width="3" fill="none"/>')
+    if hat == "chef":
+        head.append('<rect x="-40" y="-478" width="80" height="34" fill="#fff"/><ellipse cx="0" cy="-500" rx="56" ry="40" fill="#fff"/>'
+                    '<ellipse cx="-34" cy="-488" rx="30" ry="26" fill="#fff"/><ellipse cx="34" cy="-488" rx="30" ry="26" fill="#fff"/>'
+                    '<rect x="-40" y="-452" width="80" height="8" fill="#e8e2d6"/>')
+    upper.append(g("headtilt", "".join(head), desync(2.5, 4)))
+    p.append(g("breathe2", "".join(upper), desync(2.6, 3.6)))
     p.append('</g>')
-    return g(motion, "".join(p), desync(1.6, 2.6)) if motion else "".join(p)
+    body = "".join(p)
+    if who:
+        body = f'<g data-who="{who}">{body}</g>'
+    return g(motion, body, desync(1.6, 2.6)) if motion else body
 
 
 def crowd(y, n=40, seed=3, color="#0a1222", scale=1.0, cheer=False):
@@ -396,7 +464,7 @@ def a_campaign():
         b.append(g("searchlight", f'<path d="M{x},1080 L{x - 120},0 L{x + 120},0Z" fill="#fff" opacity=".05"/>', desync(3, 5)))
     b.append(confetti(160, 7))
     b.append(flag(260, 200, 300, 180, wave=8) + flag(1380, 200, 300, 180, wave=8))
-    b.append(person(960, 780, 1.15, arm_up=True, skin=SKIN[3]))
+    b.append(person(960, 780, 1.15, arm_up=True, skin=SKIN[3], who="pres"))
     b.append(f'<path d="M820,640 L1100,640 L1060,880 L860,880Z" fill="{NAVY}"/>'
              f'{star_shape(960, 740, 60, GOLD)}<rect x="900" y="610" width="120" height="30" fill="#2a2a2a"/>')
     b.append(crowd(1080, 30, 11, "#060b16", 1.6, cheer=True))
@@ -442,7 +510,7 @@ def a_speech():
         x = 260 + i * 350
         b.append(g("searchlight", f'<path d="M{x},0 L{x + 140},0 L{x + 260},1080 L{x - 120},1080Z" fill="#fff" opacity=".05"/>', desync(3, 5)))
     b.append(crowd(1080, 26, 23, "#05080f", 1.5, cheer=True))
-    b.append(person(960, 900, 1.4, skin=SKIN[2]))
+    b.append(person(960, 900, 1.4, skin=SKIN[2], who="pres", gesture=True))
     b.append(f'<path d="M790,700 L1130,700 L1090,1000 L830,1000Z" fill="#3a2516"/>'
              f'<circle cx="960" cy="820" r="70" fill="{GOLD}" opacity=".8"/>{star_shape(960, 820, 48, NAVY)}')
     for i in range(3):
@@ -506,9 +574,9 @@ def a_movers():
     for i, (x, y) in enumerate(((1000, 880), (1080, 880), (1040, 800), (1180, 880))):
         b.append(g("dropin", f'<rect x="{x}" y="{y - 80}" width="76" height="80" fill="#c99b5f" stroke="#8a6232" stroke-width="3"/>'
                              f'<rect x="{x + 28}" y="{y - 80}" width="20" height="80" fill="#e1c07f"/>', delay(.8 + i * .25)))
-    b.append(g("hurry", person(560, 990, .55, suit="#30507a", skin=SKIN[1], motion="march"), "--dx:160px"))
+    b.append(person(560, 990, .55, suit="#30507a", skin=SKIN[1], motion="march", who="mover", hair_style="cap", hair="#c0392b", tie=None, gesture=True))
     b.append(g("hurry", person(1400, 1000, .55, suit="#30507a", skin=SKIN[2], motion="march")
-               + '<rect x="1340" y="700" width="120" height="100" fill="#c99b5f" stroke="#8a6232" stroke-width="3"/>', "--dx:-200px"))
+               + '<rect x="1340" y="640" width="120" height="100" fill="#c99b5f" stroke="#8a6232" stroke-width="3"/>', "--dx:-200px"))
     return svg("".join(b), d + d2)
 
 
@@ -559,9 +627,8 @@ def a_chef():
     b.append(steam(920, 690, 3, 1.2))
     b.append('<path d="M1360,720 L1360,560 M1400,720 L1400,560" stroke="#bbb" stroke-width="10"/>'
              '<path d="M520,720 L520,540 Q560,560 540,640 L540,720" fill="#ccc"/>')
-    b.append(g("float", '<g transform="translate(960,320)"><ellipse cx="0" cy="0" rx="150" ry="100" fill="#fff"/>'
-             '<ellipse cx="-90" cy="20" rx="80" ry="70" fill="#fff"/><ellipse cx="90" cy="20" rx="80" ry="70" fill="#fff"/>'
-             '<rect x="-110" y="40" width="220" height="90" fill="#fff"/><rect x="-110" y="110" width="220" height="20" fill="#e6e0d4"/></g>'))
+    b.insert(1, person(1380, 980, 1.05, suit="#f4f1ea", skin=SKIN[2], tie=None, hair="#1a1a1a", hair_style="short",
+                       hat="chef", who="chef", gesture=True, pants="#2b2b33", shirt="#e8e2d6"))
     return svg("".join(b), d)
 
 
@@ -750,7 +817,7 @@ def a_phone_call():
                        f'<rect x="1270" y="530" width="140" height="50" rx="10" fill="{NAVY}"/>')
              + g("ringwaves", '<path d="M1450,470 q30,30 0,60 M1480,450 q45,50 0,100" stroke="#e33" stroke-width="6" fill="none"/>')
 )
-    return oval_office(extra=extra, behind=person(960, 760, .75, skin=SKIN[3]))
+    return oval_office(extra=extra, behind=person(960, 760, .75, skin=SKIN[3], who="pres", gesture=True))
 
 
 def a_little_league():
@@ -786,7 +853,7 @@ def a_secret_service():
     d, s = sky("#3a4a62", "#141b26")
     b = [s, '<rect x="0" y="880" width="1920" height="200" fill="#1b222e"/>']
     for i, x in enumerate((420, 960, 1500)):
-        p = person(x, 1000 if i != 1 else 1040, 1.25 if i == 1 else 1.05, shades=True, earpiece=True, skin=SKIN[i], tie="#111")
+        p = person(x, 1000 if i != 1 else 1040, 1.25 if i == 1 else 1.05, shades=True, earpiece=True, skin=SKIN[i], tie="#111", who="agent" if i == 1 else None, hair_style=["short", "bald", "short"][i], hair="#1a1a1a")
         b.append(g("slidein-l" if i == 0 else ("rise" if i == 1 else "slidein-r"), p, delay(i * .2)))
     b.append(g("sweep", '<path d="M-400,0 L200,0 L800,1080 L400,1080Z" fill="#fff" opacity=".05"/>'))
     return svg("".join(b), d)
@@ -799,7 +866,7 @@ def a_hallway_door():
          '<path d="M760,800 L1160,800 L1920,1080 L0,1080Z" fill="#7a2230"/>',
          '<rect x="860" y="420" width="200" height="380" fill="#4a2e18"/>',
          g("winflicker", '<rect x="870" y="430" width="180" height="370" fill="#ffd98a" opacity=".5"/>', "animation-duration:5s")]
-    b.append(person(560, 1020, 1.0, shades=True, earpiece=True, skin=SKIN[2], tie="#111", motion="lookaround"))
+    b.append(person(560, 1020, 1.0, shades=True, earpiece=True, skin=SKIN[2], tie="#111", motion="lookaround", who="agent", hair_style="short", hair="#111"))
     b.append(person(1360, 1020, 1.0, shades=True, earpiece=True, skin=SKIN[0], tie="#111", motion="lookaround"))
     return svg("".join(b), d)
 
@@ -846,7 +913,7 @@ def a_no_driving():
 def a_aide():
     d, s = sky("#5a6a84", "#1b2230")
     b = [s, '<rect x="0" y="860" width="1920" height="220" fill="#2a3242"/>']
-    aide = (person(700, 980, 1.25, suit="#1b2b4a", skin=SKIN[1], tie="#1b2b4a", hair="#111", motion="")
+    aide = (person(700, 980, 1.25, suit="#1b2b4a", skin=SKIN[1], tie="#1b2b4a", hair="#111", motion="", who="aide", hair_style="short", gesture=True)
             + g("swing", '<rect x="760" y="760" width="220" height="160" rx="16" fill="#111"/><path d="M820,760 Q870,720 920,760" stroke="#111" stroke-width="16" fill="none"/>')
             + f'<rect x="590" y="660" width="220" height="16" fill="{GOLD}"/>')
     b.append(g("follow", aide))
@@ -989,7 +1056,7 @@ def a_turkey():
     b.append(g("peck", '<ellipse cx="960" cy="520" rx="60" ry="80" fill="#6b3c1a"/><circle cx="960" cy="440" r="50" fill="#7d4a22"/>'
              f'<path d="M960,470 Q930,520 950,560" stroke="{RED}" stroke-width="22" fill="none"/>'
              '<path d="M1000,440 L1050,450 L1000,460Z" fill="#e8b830"/><circle cx="980" cy="430" r="8" fill="#111"/>'))
-    b.append(person(1480, 980, 1.0, skin=SKIN[0], arm_up=True))
+    b.append(person(1480, 980, 1.0, skin=SKIN[0], arm_up=True, who="pres"))
     return svg("".join(b), d + d2)
 
 
@@ -1003,7 +1070,7 @@ def a_baseball():
         b.append(g("jump", f'<rect x="{x}" y="200" width="40" height="180" fill="{["#222", "#2a2a2a"][x // 64 % 2]}"/>', desync(.5, .9)))
     for x in (200, 1720):
         b.append(f'<rect x="{x - 10}" y="40" width="20" height="340" fill="#888"/>' + g("tw", f'<rect x="{x - 90}" y="20" width="180" height="80" fill="#eee"/>', desync(.8, 1.4)))
-    b.append(person(960, 880, .9, skin=SKIN[1], arm_up=True, wave_arm=False, motion="pitch"))
+    b.append(person(960, 880, .9, skin=SKIN[1], arm_up=True, wave_arm=False, motion="pitch", who="pres"))
     b.append(g("pitchball", '<circle cx="1062" cy="470" r="26" fill="#fff"/><path d="M1047,455 Q1062,470 1047,485 M1077,455 Q1062,470 1077,485" stroke="red" stroke-width="3" fill="none"/>'))
     return svg("".join(b), d)
 
@@ -1174,7 +1241,8 @@ def a_homecoming():
     b.append(flag(140, 120, 600, 360, wave=16, pole=False) + flag(1180, 120, 600, 360, wave=16, pole=False))
     for i in range(7):
         x = 200 + i * 250
-        b.append(person(x, 1000, .85, suit="#5a6a3a", tie="#5a6a3a", skin=SKIN[i % 4], hair="#5a6a3a", motion="march"))
+        b.append(person(x, 1000, .85, suit="#5a6a3a", tie="#5a6a3a", skin=SKIN[i % 4], hair="#4e5a34", motion="march",
+                        hair_style="cap", who="soldier" if i == 2 else None, shirt="#6b7b4a"))
     b.append(person(960, 1060, 1.0, skin=SKIN[3], arm_up=True))
     return svg("".join(b), d)
 
@@ -1235,7 +1303,7 @@ def a_exit_door():
          '<rect x="640" y="100" width="640" height="30" fill="#e6dcc4"/><rect x="620" y="100" width="40" height="920" fill="#e6dcc4"/><rect x="1260" y="100" width="40" height="920" fill="#e6dcc4"/>',
          g("dooropen", '<path d="M660,120 L460,60 L460,1080 L660,1020Z" fill="#5a3418"/>'),
          g("pulse", '<path d="M660,1020 L1260,1020 L1800,1080 L120,1080Z" fill="#ffe8b0" opacity=".25"/>')]
-    walker = person(960, 1020, .9, suit="#0e0e12", skin="#0e0e12", hair="#0e0e12", tie="#0e0e12", motion="march")
+    walker = person(960, 1020, .9, suit="#0e0e12", skin="#0e0e12", hair="#0e0e12", tie="#0e0e12", motion="march", shirt="#0e0e12")
     b.append(g("walkaway", f'<g transform="translate(960,1020) scale(1.3)"><g transform="translate(-960,-1020)">{walker}</g></g>'))
     return svg("".join(b), d)
 

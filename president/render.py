@@ -29,8 +29,8 @@ VOICE_SR = 24000
 SR = 44100
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-SCENE_GAP = 0.80        # silence after each scene
-PARAGRAPH_GAP = 1.20    # extra silence at a paragraph break
+SCENE_GAP = 0.65        # silence after each scene
+PARAGRAPH_GAP = 1.00    # extra silence at a paragraph break
 CHAPTER_CARD = 4.0      # seconds a chapter title card holds
 INTRO_PAD = 0.8
 OUTRO = 8.0
@@ -151,6 +151,34 @@ def synth(chapters, models, work, speed, voice, model_file="kokoro-v1.0.onnx"):
             sc["wav"] = path
             sc["dur"] = sf.info(path).duration
             i += 1
+    synth_dialogue(chapters, models, work, model_file)
+
+
+def synth_dialogue(chapters, models, work, model_file="kokoro-v1.0.onnx"):
+    """Character lines (art_map.DIALOGUE), one wav per line, in their own voices."""
+    import hashlib
+    import soundfile as sf
+    from art_map import DIALOGUE
+    k = None
+    os.makedirs(os.path.join(work, "dlg"), exist_ok=True)
+    seen = set()
+    for ch in chapters:
+        for sc in ch["scenes"]:
+            sc["dialogue"] = []
+            if sc["head"] not in DIALOGUE or sc["head"] in seen:
+                continue
+            seen.add(sc["head"])
+            for who, text, voice, ax, ay, speed in DIALOGUE[sc["head"]]:
+                key = f"{voice}|{speed}|{text}"
+                path = os.path.join(work, "dlg", hashlib.md5(key.encode()).hexdigest()[:12] + ".wav")
+                if not os.path.exists(path):
+                    if k is None:
+                        from kokoro_onnx import Kokoro
+                        k = Kokoro(os.path.join(models, model_file), os.path.join(models, "voices-v1.0.bin"))
+                    samples, sr = k.create(text, voice=voice, speed=speed, lang="en-us")
+                    sf.write(path, samples, sr)
+                sc["dialogue"].append({"who": who, "text": text, "ax": ax, "ay": ay, "wav": path,
+                                       "dur": sf.info(path).duration})
 
 
 def build_timeline(chapters):
@@ -172,8 +200,14 @@ def build_timeline(chapters):
             if prev_para is not None and sc["para"] != prev_para:
                 t += PARAGRAPH_GAP
             prev_para = sc["para"]
-            segs.append({"kind": "scene", "ci": ci, "start": t, "voice_at": t + 0.25,
-                         "end": t + 0.25 + sc["dur"] + SCENE_GAP, "vo_dur": sc["dur"],
+            # Character lines play first, then the narrator.
+            lines, cur = [], 0.45
+            for ln in sc.get("dialogue", []):
+                lines.append(dict(ln, at=cur))
+                cur += ln["dur"] + 0.3
+            voice_local = cur + 0.15 if lines else 0.25
+            segs.append({"kind": "scene", "ci": ci, "start": t, "voice_at": t + voice_local, "dialogue": lines,
+                         "end": t + voice_local + sc["dur"] + SCENE_GAP, "vo_dur": sc["dur"],
                          "head": sc["head"], "vo": sc["vo"], "wav": sc["wav"], "art": sc["art"],
                          "chapter": ch["title"]})
             t = segs[-1]["end"]
@@ -229,6 +263,11 @@ def build_audio(segs, work, sf2):
         data = _resample(data, sr, SR)
         a = int(s["voice_at"] * SR)
         voice[a:a + len(data)] += data
+        for ln in s["dialogue"]:
+            d, sr = sf.read(ln["wav"], dtype="float32")
+            d = _resample(d, sr, SR) * 0.95
+            a = int((s["start"] + ln["at"]) * SR)
+            voice[a:a + len(d)] += d[:max(0, n - a)]
     voice *= 0.9 / (np.max(np.abs(voice)) + 1e-9)
 
     # Music: one span per chapter (from its card to the next card), ducked
@@ -267,6 +306,8 @@ def build_audio(segs, work, sf2):
             place("boom", s["start"] + .38, .6)
         elif s["kind"] == "scene" and s["run"]["first"]:
             place("swish", s["start"] + .02, .15)
+        for ln in s.get("dialogue", []):
+            place("pophi", s["start"] + ln["at"] - .05, .35)
         if not s["run"]["first"]:
             continue
         r0, r1 = s["run"]["start"], s["run"]["end"]
@@ -311,14 +352,19 @@ def build_pages(segs, work):
     os.makedirs(os.path.join(work, "pages"), exist_ok=True)
     os.makedirs(os.path.join(work, "clips"), exist_ok=True)
     art_cache, jobs = {}, []
+    grain = os.path.join(work, "grain.png")
+    if not os.path.exists(grain):
+        from PIL import Image
+        noise = np.random.default_rng(5).normal(128, 60, (640, 640)).clip(0, 255).astype(np.uint8)
+        Image.fromarray(noise, "L").save(grain)
     for i, s in enumerate(segs):
         if s["art"] not in art_cache:
             art_cache[s["art"]] = art.ART[s["art"]]()
         run = s["run"]
         cam = {"run_dur": run["end"] - run["start"], "zoom_in": run["index"] % 2 == 0,
-               "pan": 1 if (run["index"] // 2) % 2 == 0 else -1, "first": run["first"]}
+               "pan": 1 if (run["index"] // 2) % 2 == 0 else -1, "first": run["first"], "offset": run["offset"]}
         html_path = os.path.join(work, "pages", f"{i:03d}.html")
-        doc = anim.page(s, art_cache[s["art"]], total, cam)
+        doc = anim.page(s, art_cache[s["art"]], total, cam, grain=grain)
         out = os.path.join(work, "clips", f"{i:03d}.mp4")
         f0, f1 = round(s["start"] * FPS), round(s["end"] * FPS)
         job = {"html": html_path, "out": out, "frames": f1 - f0, "fps": FPS, "artOffset": run["offset"]}

@@ -17,7 +17,7 @@ FILL_BOX = """
 .pinscatter,.roll,.slidein-b,.printout,.slidein-l,.slidein-r,.stadium,.stamp,.scan,.radar,.walk,.ship,.nowline,
 .ring,.gavel,.wheelspin,.parallax,.roadlines,.cruise,.shake,.slam,.swing,.follow,.signswing,.tumble,.signing,
 .radarsweep,.peck,.fan,.pitchball,.wobble,.hop,.flyby,.hover,.windowcloud,.turbulence,.rotor,.tailrotor,
-.liftoff,.treesway,.debris,.sandtop,.sandbot,.dooropen,.walkaway
+.liftoff,.treesway,.debris,.sandtop,.sandbot,.dooropen,.walkaway,.breathe2,.armidle,.gesture
 {transform-box:fill-box;transform-origin:50% 50%}
 """
 
@@ -223,6 +223,13 @@ KEYFRAMES = """
 @keyframes stream{from{stroke-dashoffset:0}to{stroke-dashoffset:-48}}
 .dooropen{transform-origin:100% 50%;animation:dooropen 1.6s ease-out both}
 @keyframes dooropen{from{transform:scaleX(1)}to{transform:scaleX(.45)}}
+.breathe2{transform-origin:50% 100%;animation:breathe2 3s ease-in-out infinite alternate}
+@keyframes breathe2{from{transform:scaleY(1)}to{transform:scaleY(1.018)}}
+.armidle{transform-origin:20% 5%;animation:armidle 3s ease-in-out infinite alternate}
+@keyframes armidle{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
+.gesture{transform-origin:20% 5%;animation:gesture 1.1s ease-in-out infinite alternate}
+@keyframes gesture{from{transform:rotate(-12deg)}to{transform:rotate(8deg)}}
+@keyframes talk{0%{opacity:1}50%{opacity:0}}
 .walkaway{transform-origin:50% 100%;animation:walkaway 9s linear both}
 @keyframes walkaway{from{transform:translateY(0) scale(1)}to{transform:translateY(-170px) scale(.55)}}
 """
@@ -243,10 +250,68 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#000}
 @keyframes slamt{from{transform:scale(1.8);opacity:0;letter-spacing:30px}to{transform:scale(1);opacity:1;letter-spacing:2px}}
 @keyframes growx2{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 #fade{position:absolute;inset:0;background:#000;opacity:0}
+.bw{position:absolute;width:0;height:0}
+.bubble{position:absolute;bottom:26px;background:#fff;color:#14161b;font:800 38px/1.18 Montserrat;padding:18px 26px 20px;
+  border-radius:28px;border:5px solid #14161b;box-shadow:0 10px 0 rgba(0,0,0,.22);text-align:center;box-sizing:border-box;
+  transform-origin:var(--tx) 100%;animation-name:bpop,bout;animation-duration:.38s,.22s;
+  animation-timing-function:cubic-bezier(.34,1.56,.64,1),ease-in;animation-fill-mode:both,forwards}
+.bubble::after{content:"";position:absolute;bottom:-26px;left:calc(var(--tx) - 16px);border:16px solid transparent;
+  border-top:22px solid #14161b}
+.bubble::before{content:"";position:absolute;bottom:-15px;left:calc(var(--tx) - 10px);border:10px solid transparent;
+  border-top:15px solid #fff;z-index:1}
+@keyframes bpop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes bout{to{transform:scale(.85);opacity:0}}
+.bubble .c{opacity:0;animation:chon .01s linear both}
+@keyframes chon{to{opacity:1}}
+#grain{position:absolute;inset:-60px;opacity:.07;mix-blend-mode:overlay;pointer-events:none;animation:grain .6s steps(6) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-30px,20px)}40%{transform:translate(25px,-35px)}
+  60%{transform:translate(-15px,40px)}80%{transform:translate(35px,10px)}100%{transform:translate(0,0)}}
+#wipe{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#wipe i{position:absolute;top:-10%;height:120%;width:150%;left:-25%;animation:wipe .6s cubic-bezier(.7,0,.25,1) both}
+#wipe i:nth-child(1){background:#b5283b;animation-delay:.16s}
+#wipe i:nth-child(2){background:#f7f4ec;animation-delay:.08s}
+#wipe i:nth-child(3){background:#0b1a33;animation-delay:0s}
+@keyframes wipe{from{transform:skewX(-14deg) translateX(0)}to{transform:skewX(-14deg) translateX(115%)}}
 #vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 55%,rgba(0,0,0,.38) 100%)}
 """
 
-def page(seg, art_svg, total, cam):
+def bubbles_html(seg):
+    out = []
+    for ln in seg.get("dialogue", []):
+        text = ln["text"]
+        w = min(600, max(170, int(19.5 * len(text)) + 64))
+        left = min(max(ln["ax"] - w / 2, 110), 1810 - w)
+        tx = ln["ax"] - left
+        tx = min(max(tx, 40), w - 40)
+        start, end = ln["at"] - 0.05, ln["at"] + ln["dur"] + 0.55
+        n = max(1, len(text))
+        type_dur = max(.3, ln["dur"] * .8)
+        chars = "".join(
+            f'<span class="c" style="animation-delay:{start + .12 + type_dur * i / n:.2f}s">{html.escape(c)}</span>'
+            for i, c in enumerate(text))
+        out.append(f'<div class="bw" style="left:{ln["ax"]}px;top:{ln["ay"]}px">'
+                   f'<div class="bubble" style="left:{left - ln["ax"]:.0f}px;width:{w}px;--tx:{tx:.0f}px;'
+                   f'animation-delay:{start:.2f}s,{end:.2f}s">{chars}</div></div>')
+    return "".join(out)
+
+
+def talk_css(seg, art_offset):
+    by_who = {}
+    for ln in seg.get("dialogue", []):
+        if ln["who"]:
+            by_who.setdefault(ln["who"], []).append(ln)
+    rules = []
+    for who, lines in by_who.items():
+        names = ",".join("talk" for _ in lines)
+        delays = ",".join(f"{art_offset + ln['at']:.2f}s" for ln in lines)
+        counts = ",".join(str(max(1, round(ln["dur"] / .2))) for ln in lines)
+        rules.append(f'#art [data-who="{who}"] .mouthopen{{animation-name:{names};animation-duration:.2s;'
+                     f'animation-timing-function:steps(1);animation-delay:{delays};animation-iteration-count:{counts}}}'
+                     f'#art [data-who="{who}"] .gesture{{animation-duration:.45s}}')
+    return "".join(rules)
+
+
+def page(seg, art_svg, total, cam, grain=None):
     """cam: dict with run_dur, zoom_in (bool), pan (+1/-1), first (bool)."""
     css = PAGE_CSS.replace("{FONTS}", FONTS)
     d = cam["run_dur"]
@@ -255,7 +320,7 @@ def page(seg, art_svg, total, cam):
     px = 30 * cam["pan"]
     cam_kf = (f"@keyframes cam{{from{{transform:scale({z0}) translateX({-px}px)}}"
               f"to{{transform:scale({z1}) translateX({px}px)}}}}"
-              f"#cam{{animation:cam {d:.2f}s linear both}}")
+              f"#cam{{animation:cam {d:.2f}s cubic-bezier(.45,.05,.55,.95) both}}")
     punch = ("#punch{animation:punchin .45s cubic-bezier(.2,.8,.3,1) both}"
              "@keyframes punchin{from{transform:scale(1.07)}to{transform:scale(1)}}") if cam["first"] else ""
     seg_dur = seg["end"] - seg["start"]
@@ -266,8 +331,12 @@ def page(seg, art_svg, total, cam):
         fades = "#fade{opacity:1;animation:fadeinb .8s linear both}@keyframes fadeinb{to{opacity:0}}"
 
     body = [f'<div id="stage" class="{seg["kind"]}"><div id="punch"><div id="cam"><div id="art">{art_svg}</div></div></div>']
-    # Scenes are full-frame art with no on-screen text.
+    # Scenes are full-frame art; characters' lines appear as speech bubbles.
+    if seg["kind"] == "scene":
+        body[0] = body[0].replace('</div></div></div>', f'</div>{bubbles_html(seg)}</div></div>', 1)
     body.append('<div id="vignette"></div>')
+    if grain:
+        body.append(f'<div id="grain" style="background:url(\'file://{grain}\')"></div>')
     if seg["kind"] == "card":
         title = seg["title"]
         small, big = ([s.strip() for s in title.split(":", 1)] if ":" in title else ("", title))
@@ -276,6 +345,8 @@ def page(seg, art_svg, total, cam):
     elif seg["kind"] == "outro":
         body.append('<div id="cardtitle"><div class="small">WHAT IT\'S LIKE TO BE PRESIDENT</div>'
                     '<div class="big">Would you<br>take the job?</div><div class="rule"></div></div>')
+    if seg["kind"] in ("card", "outro"):
+        body.append('<div id="wipe"><i></i><i></i><i></i></div>')
     body.append('<div id="fade"></div></div>')
-    return (f"<!doctype html><html><head><meta charset='utf-8'><style>{css}{FILL_BOX}{KEYFRAMES}{cam_kf}{punch}{fades}"
+    return (f"<!doctype html><html><head><meta charset='utf-8'><style>{css}{FILL_BOX}{KEYFRAMES}{cam_kf}{punch}{fades}{talk_css(seg, cam.get("offset", 0))}"
             f"</style></head><body>{''.join(body)}</body></html>")
